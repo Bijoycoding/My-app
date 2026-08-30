@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">Password Protect</string>
-    <string name="title_activity_main">Password Protect</string>
-    <string name="package_name">com.bijoy.passwordprotect</string>
-    <string name="custom_url_scheme">com.bijoy.passwordprotect</string>
-</resources>
