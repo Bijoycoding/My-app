@@ -1,1 +1,557 @@
-<html><body>Loading...</body></html>
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build APK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --bg:#f3f5fb;
+    --panel:#ffffff;
+    --panel-raised:#fffaf0;
+    --grid:#e8ebf5;
+    --hair:#dfe3ef;
+    --ink:#161c2e;
+    --muted:#6a7290;
+    --muted-dim:#a6acc4;
+    --brass:#b8791d;
+    --brass-fill:#dda23f;
+    --brass-soft:#fbead0;
+    --signal:#128a72;
+    --danger:#c9433b;
+    --console-bg:#0c0f1a;
+    --console-text:#93a0c2;
+    --console-ok:#4fd1a5;
+    --console-now:#e0a742;
+    --console-err:#ff8686;
+    --sans:'Inter', -apple-system, sans-serif;
+    --display:'Space Grotesk', var(--sans);
+    --mono:'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/100% 28px,
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    padding:18px 14px 40px;
+    line-height:1.5;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .wrap{max-width:520px; margin:0 auto;}
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    padding-bottom:16px; margin-bottom:18px; border-bottom:1px solid var(--hair);
+  }
+  header .title-block h1{
+    font-family:var(--display); font-weight:700; font-size:22px; letter-spacing:-.01em; color:var(--ink);
+  }
+  header .title-block p{font-size:12.5px; color:var(--muted); margin-top:3px;}
+  header .id-tag{
+    font-family:var(--mono); font-size:10.5px; color:var(--brass);
+    border:1px solid var(--brass-soft); background:var(--brass-soft); border-radius:4px; padding:3px 7px;
+    white-space:nowrap;
+  }
+
+  /* ---------- Connection strip ---------- */
+  .connect{
+    border:1px solid var(--hair); border-radius:10px; margin-bottom:16px; overflow:hidden;
+    background:var(--panel);
+  }
+  .connect summary{
+    list-style:none; cursor:pointer; padding:12px 14px;
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:12.5px; color:var(--muted); font-weight:500;
+  }
+  .connect summary::-webkit-details-marker{display:none;}
+  .connect summary .dot{
+    width:6px; height:6px; border-radius:50%; background:var(--muted-dim); margin-right:8px; display:inline-block;
+  }
+  .connect summary .lead{display:flex; align-items:center;}
+  .connect summary .chev{font-family:var(--mono); transition:transform .15s;}
+  .connect[open] summary .chev{transform:rotate(90deg);}
+  .connect-body{padding:2px 14px 16px; border-top:1px solid var(--hair);}
+
+  /* ---------- Section ---------- */
+  .section{margin-bottom:16px;}
+  .section-head{
+    display:flex; align-items:baseline; gap:9px; margin-bottom:10px; padding:0 2px;
+  }
+  .section-head .tag{
+    font-family:var(--mono); font-size:10.5px; color:var(--brass); letter-spacing:.02em;
+  }
+  .section-head h2{
+    font-family:var(--display); font-size:14px; font-weight:600; color:var(--ink);
+  }
+  .panel{
+    background:var(--panel); border:1px solid var(--hair); border-radius:10px; padding:16px;
+    box-shadow:0 1px 2px rgba(20,26,46,.03);
+  }
+
+  .field{margin-bottom:13px;}
+  .field:last-child{margin-bottom:0;}
+  .field label{
+    display:block; font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:500;
+  }
+  input[type=text], input[type=password], textarea{
+    width:100%; background:#f7f8fc; border:1px solid var(--hair); border-radius:7px;
+    padding:11px 12px; font-size:14px; color:var(--ink); font-family:var(--sans);
+  }
+  input::placeholder, textarea::placeholder{color:var(--muted-dim);}
+  textarea{font-family:var(--mono); font-size:12px; min-height:130px; resize:vertical; line-height:1.6;}
+  input:focus, textarea:focus{outline:none; border-color:var(--brass);}
+  .field .note{font-size:11px; color:var(--muted-dim); margin-top:5px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
+  /* ---------- segmented control ---------- */
+  .seg{
+    display:flex; background:#f7f8fc; border:1px solid var(--hair); border-radius:8px; padding:3px; margin-bottom:12px;
+  }
+  .seg-opt{
+    flex:1; text-align:center; padding:8px 6px; border-radius:6px; font-size:12.5px; font-weight:500;
+    color:var(--muted); cursor:pointer;
+  }
+  .seg-opt.active{background:#fff; color:var(--brass); border:1px solid var(--brass-soft); box-shadow:0 1px 3px rgba(20,26,46,.06);}
+
+  /* ---------- icon picker ---------- */
+  .icon-picker{display:flex; align-items:center; gap:12px;}
+  .icon-frame{
+    width:52px; height:52px; border-radius:11px; background:#f7f8fc; border:1px solid var(--hair);
+    display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;
+  }
+  .icon-frame img{width:100%; height:100%; object-fit:cover;}
+  .icon-frame .ph{font-size:18px; color:var(--muted-dim);}
+  .icon-choose{
+    flex:1; border:1px dashed var(--hair); border-radius:9px; padding:12px; text-align:center;
+    font-size:12.5px; color:var(--muted); cursor:pointer;
+  }
+  .icon-choose b{color:var(--ink); display:block; font-size:13px; margin-bottom:2px;}
+  #iconInput{display:none;}
+
+  /* ---------- toggles ---------- */
+  .toggle-list .toggle{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:11px 0; border-bottom:1px solid var(--hair);
+  }
+  .toggle-list .toggle:last-child{border-bottom:none;}
+  .toggle .label{font-size:13.5px; font-weight:500; color:var(--ink);}
+  .toggle .sub{font-size:11px; color:var(--muted); margin-top:2px;}
+  .switch{position:relative; width:42px; height:24px; flex-shrink:0;}
+  .switch input{opacity:0; width:0; height:0;}
+  .switch .rail{position:absolute; inset:0; background:var(--hair); border-radius:24px; transition:.18s;}
+  .switch .rail::before{
+    content:""; position:absolute; width:18px; height:18px; left:3px; top:3px;
+    background:#fff; border-radius:50%; transition:.18s; box-shadow:0 1px 3px rgba(20,26,46,.25);
+  }
+  .switch input:checked + .rail{background:var(--brass-fill);}
+  .switch input:checked + .rail::before{transform:translateX(18px);}
+
+  /* ---------- build button ---------- */
+  .build-btn{
+    width:100%; background:var(--brass-fill); color:#241a05; border:none; border-radius:10px;
+    padding:16px; font-family:var(--display); font-size:14.5px; font-weight:700;
+    letter-spacing:.02em; cursor:pointer; margin-top:6px;
+    box-shadow:0 2px 8px rgba(221,162,63,.35);
+  }
+  .build-btn:disabled{background:var(--hair); color:var(--muted-dim); box-shadow:none;}
+  .build-btn:active:not(:disabled){transform:translateY(1px);}
+
+  /* ---------- console/log (kept dark deliberately, like an embedded instrument panel) ---------- */
+  #statusPanel{display:none; margin-top:14px;}
+  #statusPanel.show{display:block;}
+  .progress-track{height:3px; background:var(--hair); border-radius:3px; overflow:hidden; margin-bottom:10px;}
+  .progress-fill{height:100%; background:var(--brass-fill); width:0%; transition:width .4s ease;}
+  .console{
+    background:var(--console-bg); border:1px solid #1c2338; border-radius:8px; padding:12px 13px;
+    font-family:var(--mono); font-size:11.5px; color:var(--console-text); max-height:210px; overflow-y:auto;
+  }
+  .console .row{padding:2.5px 0;}
+  .console .ok{color:var(--console-ok);}
+  .console .now{color:var(--console-now);}
+  .console .err{color:var(--console-err);}
+
+  /* ---------- result / manifest stub ---------- */
+  .result{display:none; margin-top:16px;}
+  .result.show{display:block;}
+  .manifest{
+    border:1px solid var(--brass-soft); border-radius:10px; overflow:hidden; background:var(--panel);
+    box-shadow:0 4px 16px rgba(20,26,46,.06);
+  }
+  .manifest .strip{
+    background:var(--brass-fill); color:#241a05; font-family:var(--mono); font-size:10.5px;
+    padding:6px 14px; letter-spacing:.03em;
+  }
+  .manifest .body{padding:20px 16px; text-align:center;}
+  .manifest .body h3{font-family:var(--display); font-size:16px; margin-bottom:4px; color:var(--ink);}
+  .manifest .body p{font-size:12px; color:var(--muted); margin-bottom:16px;}
+  .dl-btn{
+    display:inline-block; background:var(--ink); color:#fff; text-decoration:none;
+    font-weight:700; font-size:14px; padding:13px 28px; border-radius:9px; font-family:var(--display);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="title-block">
+      <h1>Build APK</h1>
+      <p>ওয়েব প্রজেক্ট থেকে সরাসরি Android প্যাকেজ</p>
+    </div>
+    <div class="id-tag">CAP · v6.2.1</div>
+  </header>
+
+  <details class="connect" id="connectBox">
+    <summary>
+      <span class="lead"><span class="dot"></span>GitHub সংযোগ</span>
+      <span class="chev">›</span>
+    </summary>
+    <div class="connect-body">
+      <div class="field">
+        <label>Personal access token</label>
+        <input type="password" id="pat" placeholder="ghp_xxxxxxxxxxxx">
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>Owner</label>
+          <input type="text" id="owner" placeholder="Bijoycoding">
+        </div>
+        <div class="field">
+          <label>Repo</label>
+          <input type="text" id="repo" placeholder="power-notes">
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>Workflow ফাইল</label>
+          <input type="text" id="workflowFile" value="build-apk.yml">
+        </div>
+        <div class="field">
+          <label>Branch</label>
+          <input type="text" id="branch" value="main">
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="section">
+    <div class="section-head"><span class="tag">01</span><h2>অ্যাপের পরিচয়</h2></div>
+    <div class="panel">
+      <div class="field">
+        <label>App name</label>
+        <input type="text" id="appName" placeholder="My Web App">
+      </div>
+      <div class="field">
+        <label>Package name</label>
+        <input type="text" id="appId" placeholder="com.myapp.main">
+        <p class="note">ছোট হাতের অক্ষর, ডট দিয়ে আলাদা — com.bijoy.powernotes</p>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>Version name</label>
+          <input type="text" id="versionName" value="1.0">
+        </div>
+        <div class="field">
+          <label>Version code</label>
+          <input type="text" id="versionCode" value="1">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><span class="tag">02</span><h2>সোর্স</h2></div>
+    <div class="panel">
+      <div class="seg">
+        <div class="seg-opt active" id="srcCode">কোড পেস্ট</div>
+        <div class="seg-opt" id="srcUrl">ওয়েবসাইট লিংক</div>
+      </div>
+      <div class="field" id="codeField">
+        <textarea id="html_content" placeholder="&lt;!DOCTYPE html&gt;
+&lt;html&gt;...&lt;/html&gt;"></textarea>
+        <p class="note">CSS ও JS ইনলাইন সহ সম্পূর্ণ HTML ফাইল</p>
+      </div>
+      <div class="field" id="urlField" style="display:none;">
+        <input type="text" id="websiteUrl" placeholder="https://example.com">
+        <p class="note">অ্যাপ সরাসরি এই লিংক লোড করবে</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><span class="tag">03</span><h2>আইকন</h2></div>
+    <div class="panel">
+      <div class="icon-picker">
+        <div class="icon-frame" id="iconFrame"><span class="ph">◇</span></div>
+        <label class="icon-choose" for="iconInput">
+          <b>ছবি বেছে নিন</b>
+          স্কয়ার, 512×512 PNG
+        </label>
+        <input type="file" id="iconInput" accept="image/*">
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><span class="tag">04</span><h2>আচরণ</h2></div>
+    <div class="panel toggle-list">
+      <div class="toggle">
+        <div><div class="label">Fullscreen</div><div class="sub">স্ট্যাটাস বার লুকায়</div></div>
+        <label class="switch"><input type="checkbox" id="fullscreen"><span class="rail"></span></label>
+      </div>
+      <div class="toggle">
+        <div><div class="label">Exit confirmation</div><div class="sub">বের হওয়ার আগে জিজ্ঞাসা করে</div></div>
+        <label class="switch"><input type="checkbox" id="exitConfirmation" checked><span class="rail"></span></label>
+      </div>
+      <div class="toggle">
+        <div><div class="label">Dark mode</div><div class="sub">সিস্টেম থিম অনুসরণ করে</div></div>
+        <label class="switch"><input type="checkbox" id="darkMode"><span class="rail"></span></label>
+      </div>
+      <div class="toggle">
+        <div><div class="label">PC mode</div><div class="sub">ডেস্কটপ ভিউতে সাইট লোড হবে</div></div>
+        <label class="switch"><input type="checkbox" id="pcMode"><span class="rail"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <button class="build-btn" id="buildBtn">Build APK</button>
+
+  <div id="statusPanel">
+    <div class="progress-track"><div class="progress-fill" id="progressBar"></div></div>
+    <div class="console" id="log"></div>
+  </div>
+
+  <div class="result" id="result">
+    <div class="manifest">
+      <div class="strip" id="manifestStrip">PACKAGE READY</div>
+      <div class="body">
+        <h3 id="resultTitle">তৈরি হয়ে গেছে</h3>
+        <p>ফাইলটি ব্রাউজারের ডাউনলোড ফোল্ডারে সেভ হবে</p>
+        <a class="dl-btn" id="downloadLink" href="#" target="_blank" rel="noopener">Download APK</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// ---- source segmented control ----
+$('srcCode').onclick = ()=>{ $('srcCode').classList.add('active'); $('srcUrl').classList.remove('active'); $('codeField').style.display='block'; $('urlField').style.display='none'; };
+$('srcUrl').onclick = ()=>{ $('srcUrl').classList.add('active'); $('srcCode').classList.remove('active'); $('urlField').style.display='block'; $('codeField').style.display='none'; };
+
+// ---- persist connection settings ----
+['pat','owner','repo','workflowFile','branch'].forEach(id=>{
+  const saved = localStorage.getItem('apkb_'+id);
+  if(saved) $(id).value = saved;
+  $(id).addEventListener('change', ()=> localStorage.setItem('apkb_'+id, $(id).value));
+});
+
+// ---- icon preview ----
+let logoBase64 = null;
+$('iconInput').addEventListener('change', e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    logoBase64 = reader.result.split(',')[1];
+    $('iconFrame').innerHTML = `<img src="${reader.result}">`;
+  };
+  reader.readAsDataURL(file);
+});
+
+// ---- logging ----
+function log(msg, cls=''){
+  const d = document.createElement('div');
+  d.className = 'row ' + cls;
+  d.textContent = '· ' + msg;
+  $('log').appendChild(d);
+  $('log').scrollTop = $('log').scrollHeight;
+}
+function setProgress(p){ $('progressBar').style.width = p+'%'; }
+
+function ghHeaders(){
+  return {
+    'Authorization': 'Bearer ' + $('pat').value.trim(),
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28'
+  };
+}
+function b64EncodeUtf8(str){ return btoa(unescape(encodeURIComponent(str))); }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+async function putFile(owner, repo, path, contentBase64, message, branch){
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  let sha = null;
+  try{
+    const r = await fetch(url + `?ref=${branch}`, { headers: ghHeaders() });
+    if(r.ok){ const j = await r.json(); sha = j.sha; }
+  }catch(e){}
+  const body = { message, content: contentBase64, branch };
+  if(sha) body.sha = sha;
+  const res = await fetch(url, { method:'PUT', headers: ghHeaders(), body: JSON.stringify(body) });
+  if(!res.ok){
+    const err = await res.text();
+    throw new Error('ফাইল লিখতে ব্যর্থ (' + path + '): ' + res.status + ' ' + err.slice(0,200));
+  }
+}
+
+async function dispatchWorkflow(owner, repo, workflowFile, branch, inputs){
+  const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFile}/dispatches`;
+  const res = await fetch(url, { method:'POST', headers: ghHeaders(), body: JSON.stringify({ ref: branch, inputs }) });
+  if(!res.ok){
+    const err = await res.text();
+    throw new Error('workflow চালু করা যায়নি: ' + res.status + ' ' + err.slice(0,200));
+  }
+}
+
+async function findNewRun(owner, repo, workflowFile, afterTime){
+  for(let i=0;i<20;i++){
+    await sleep(3000);
+    const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFile}/runs?per_page=5`;
+    const res = await fetch(url, { headers: ghHeaders() });
+    if(res.ok){
+      const j = await res.json();
+      const run = (j.workflow_runs||[]).find(r => new Date(r.created_at).getTime() >= afterTime - 5000);
+      if(run) return run;
+    }
+  }
+  throw new Error('নতুন run খুঁজে পাওয়া যায়নি — Actions ট্যাবে ম্যানুয়ালি চেক করুন।');
+}
+
+async function pollRun(owner, repo, runId){
+  while(true){
+    await sleep(6000);
+    const url = `https://api.github.com/repos/${owner}/${repo}/actions/runs/${runId}`;
+    const res = await fetch(url, { headers: ghHeaders() });
+    const j = await res.json();
+    log(`স্ট্যাটাস: ${j.status}${j.conclusion ? ' → '+j.conclusion : ''}`);
+    if(j.status === 'completed') return j;
+  }
+}
+
+async function getApkBlob(owner, repo, runId){
+  const url = `https://api.github.com/repos/${owner}/${repo}/actions/runs/${runId}/artifacts`;
+  const res = await fetch(url, { headers: ghHeaders() });
+  const j = await res.json();
+  if(!j.artifacts || j.artifacts.length === 0) throw new Error('কোনো artifact পাওয়া যায়নি।');
+  const artifact = j.artifacts[0];
+  const zipRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/artifacts/${artifact.id}/zip`, { headers: ghHeaders() });
+  if(!zipRes.ok) throw new Error('Artifact ডাউনলোড ব্যর্থ: ' + zipRes.status);
+  const zipBlob = await zipRes.blob();
+  const zip = await JSZip.loadAsync(zipBlob);
+  let apkFile = null;
+  zip.forEach((path, file)=>{ if(path.endsWith('.apk')) apkFile = file; });
+  if(!apkFile) throw new Error('ZIP-এর ভেতরে APK পাওয়া যায়নি।');
+  return await apkFile.async('blob');
+}
+
+$('buildBtn').addEventListener('click', async ()=>{
+  const owner = $('owner').value.trim();
+  const repo = $('repo').value.trim();
+  const workflowFile = $('workflowFile').value.trim();
+  const branch = $('branch').value.trim() || 'main';
+  const appName = $('appName').value.trim();
+  const appId = $('appId').value.trim();
+  const usingUrl = $('srcUrl').classList.contains('active');
+  const html = $('html_content').value;
+  const websiteUrl = $('websiteUrl').value.trim();
+
+  if(!$('pat').value.trim() || !owner || !repo || !appName || !appId){
+    alert('GitHub সংযোগ (টোকেন, owner, repo) ও App name / Package name অবশ্যই পূরণ করুন।');
+    return;
+  }
+  if(usingUrl && !websiteUrl){ alert('Website URL দিন।'); return; }
+  if(!usingUrl && !html.trim()){ alert('HTML কোড পেস্ট করুন।'); return; }
+
+  $('buildBtn').disabled = true;
+  $('statusPanel').classList.add('show');
+  $('result').classList.remove('show');
+  $('log').innerHTML = '';
+  setProgress(5);
+
+  try{
+    if(!usingUrl){
+      log('www/index.html লেখা হচ্ছে...');
+      await putFile(owner, repo, 'www/index.html', b64EncodeUtf8(html), 'Update via Build APK app', branch);
+      log('index.html সেভ', 'ok');
+    } else {
+      log('URL মোডের জন্য প্লেসহোল্ডার রাখা হচ্ছে...');
+      await putFile(owner, repo, 'www/index.html', b64EncodeUtf8('<html><body>Loading...</body></html>'), 'Placeholder for URL mode', branch);
+    }
+    setProgress(15);
+
+    if(logoBase64){
+      log('আইকন আপলোড হচ্ছে...');
+      await putFile(owner, repo, 'resources/icon.png', logoBase64, 'Add icon via Build APK app', branch);
+      log('আইকন সেভ', 'ok');
+    }
+    setProgress(25);
+
+    const inputs = {
+      app_name: appName,
+      app_id: appId,
+      version_name: $('versionName').value.trim() || '1.0',
+      version_code: $('versionCode').value.trim() || '1',
+      source_type: usingUrl ? 'url' : 'html',
+      website_url: usingUrl ? websiteUrl : '',
+      fullscreen: String($('fullscreen').checked),
+      exit_confirmation: String($('exitConfirmation').checked),
+      dark_mode: String($('darkMode').checked),
+      pc_mode: String($('pcMode').checked)
+    };
+
+    log('বিল্ড চালু করা হচ্ছে...');
+    const dispatchTime = Date.now();
+    await dispatchWorkflow(owner, repo, workflowFile, branch, inputs);
+    setProgress(35);
+
+    log('run খোঁজা হচ্ছে...');
+    const run = await findNewRun(owner, repo, workflowFile, dispatchTime);
+    log(`run #${run.run_number} শুরু হয়েছে`, 'ok');
+    setProgress(45);
+
+    log('প্যাকেজিং চলছে...', 'now');
+    const finished = await pollRun(owner, repo, run.id);
+    setProgress(85);
+
+    if(finished.conclusion !== 'success'){
+      throw new Error('বিল্ড ব্যর্থ। Actions ট্যাবে লগ দেখুন।');
+    }
+    log('বিল্ড সফল', 'ok');
+
+    log('APK সংগ্রহ করা হচ্ছে...');
+    const apkBlob = await getApkBlob(owner, repo, run.id);
+    setProgress(100);
+
+    const apkTyped = new Blob([apkBlob], { type: 'application/vnd.android.package-archive' });
+    const url = URL.createObjectURL(apkTyped);
+    const filename = appName.replace(/\s+/g,'_') + '.apk';
+    $('downloadLink').href = url;
+    $('downloadLink').download = filename;
+    $('downloadLink').onclick = (e)=>{
+      e.preventDefault();
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.rel = 'noopener'; a.target = '_blank';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    };
+    $('resultTitle').textContent = appName;
+    $('result').classList.add('show');
+    log('সম্পন্ন', 'ok');
+
+  }catch(err){
+    log('এরর: ' + err.message, 'err');
+  }finally{
+    $('buildBtn').disabled = false;
+  }
+});
+</script>
+</body>
+</html>
