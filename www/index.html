@@ -1,482 +1,834 @@
 <!DOCTYPE html>
 <html lang="bn">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ImgURL</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ImgURL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500&family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-        html, body {
-            touch-action: pan-x pan-y;
-            overflow-x: hidden;
-            background-color: #ffffff;
-            font-family: 'Inter', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
+  :root{
+    --bg-deep:#12141a;
+    --surface:#1b1e27;
+    --surface-2:#242836;
+    --surface-3:#2d3242;
+    --paper:#f7f3ea;
+    --paper-dim:#e9e2d2;
+    --ink:#eeece6;
+    --ink-dim:#8b90a3;
+    --flash:#ffc857;
+    --flash-deep:#e0a53a;
+    --teal:#4fd1c5;
+    --danger:#ff7a7a;
+  }
 
-        * {
-            user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-        }
+  *{box-sizing:border-box;}
 
-        input {
-            pointer-events: auto;
-            user-select: text;
-        }
+  html,body{
+    touch-action:pan-x pan-y;
+    overflow-x:hidden;
+    background:var(--bg-deep);
+    color:var(--ink);
+    font-family:'Hind Siliguri',sans-serif;
+    -webkit-tap-highlight-color:transparent;
+    margin:0;
+    height:100%;
+  }
 
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-            border-radius: 24px;
-        }
+  *{
+    user-select:none;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+  }
 
-        .upload-zone {
-            border: 2px dashed #e2e8f0;
-            transition: all 0.3s ease;
-            background-color: #f8fafc;
-        }
+  input{
+    pointer-events:auto;
+    user-select:text;
+  }
 
-        .upload-zone:active {
-            transform: scale(0.98);
-            border-color: #3b82f6;
-            background-color: #eff6ff;
-        }
+  button{
+    font-family:inherit;
+    cursor:pointer;
+  }
 
-        .btn-main {
-            background: #2563eb;
-            color: white;
-            transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-        }
+  button:focus-visible,
+  input:focus-visible,
+  a:focus-visible{
+    outline:2px solid var(--flash);
+    outline-offset:2px;
+  }
 
-        .btn-main:active {
-            transform: scale(0.96);
-        }
+  .brand{
+    font-family:'Fraunces',serif;
+    font-style:italic;
+    font-weight:500;
+  }
 
-        .btn-main:disabled {
-            opacity: 0.5;
-        }
+  .mono{
+    font-family:'JetBrains Mono',monospace;
+  }
 
-        .url-text {
-            pointer-events: none;
-            user-select: none;
-        }
+  /* ---------- background texture ---------- */
+  .grain-bg{
+    background-image:
+      radial-gradient(circle at 20% 15%, rgba(255,200,87,0.06), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(79,209,197,0.05), transparent 45%);
+  }
 
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 3px solid #ffffff;
-            width: 20px;
-            height: 20px;
-            -webkit-animation: spin 1s linear infinite;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-        }
+  /* ---------- offline screen ---------- */
+  #offline-screen{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:var(--bg-deep);
+    z-index:9999;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:24px;
+  }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+  /* ---------- api setup ---------- */
+  #api-setup-screen{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(18,20,26,0.92);
+    backdrop-filter:blur(6px);
+    z-index:9998;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
 
-        #offline-screen {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: white;
-            z-index: 9999;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
+  .setup-card{
+    background:var(--surface);
+    border:1px solid var(--surface-3);
+    border-radius:20px;
+    padding:28px 24px;
+    max-width:380px;
+    width:100%;
+    box-shadow:0 30px 60px rgba(0,0,0,0.5);
+  }
 
-        #api-setup-screen {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: white;
-            z-index: 9998;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-        }
+  .field{
+    width:100%;
+    background:var(--surface-2);
+    border:1.5px solid var(--surface-3);
+    color:var(--ink);
+    border-radius:14px;
+    padding:14px 16px;
+    font-size:14px;
+    font-family:'JetBrains Mono',monospace;
+    transition:border-color .2s;
+  }
+  .field::placeholder{color:var(--ink-dim); font-family:'Hind Siliguri',sans-serif;}
+  .field:focus{border-color:var(--flash); outline:none;}
+
+  .btn-flash{
+    background:var(--flash);
+    color:#26200f;
+    font-weight:700;
+    transition:transform .15s, box-shadow .15s, opacity .15s;
+    box-shadow:0 8px 20px rgba(255,200,87,0.25);
+  }
+  .btn-flash:active{transform:scale(0.97);}
+  .btn-flash:disabled{opacity:0.4; box-shadow:none;}
+
+  .btn-ghost{
+    background:transparent;
+    color:var(--teal);
+    font-weight:700;
+    border:1.5px solid var(--surface-3);
+    transition:border-color .2s, background .2s;
+  }
+  .btn-ghost:active{background:var(--surface-2);}
+
+  .help-box{
+    background:var(--surface-2);
+    border:1px dashed var(--surface-3);
+    border-radius:14px;
+    padding:14px 16px;
+    font-size:12.5px;
+    color:var(--ink-dim);
+    line-height:1.9;
+  }
+  .help-box b{color:var(--ink);}
+
+  /* ---------- app shell ---------- */
+  #main-content{display:flex; flex-direction:column; height:100%;}
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:22px 22px 6px 22px;
+  }
+
+  .icon-btn{
+    width:38px; height:38px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:50%;
+    color:var(--ink-dim);
+    background:transparent;
+    border:none;
+    font-size:16px;
+    transition:background .2s, color .2s;
+  }
+  .icon-btn:active{background:var(--surface-2); color:var(--ink);}
+
+  .view{flex:1; overflow-y:auto; padding:8px 22px 12px 22px;}
+  .hidden{display:none !important;}
+
+  /* ---------- polaroid ---------- */
+  .polaroid-wrap{
+    max-width:340px;
+    margin:18px auto 46px auto;
+    position:relative;
+  }
+
+  .polaroid{
+    background:var(--paper);
+    border-radius:6px;
+    padding:14px 14px 26px 14px;
+    box-shadow:0 25px 50px rgba(0,0,0,0.45), 0 4px 10px rgba(0,0,0,0.25);
+    transform:rotate(-1.2deg);
+    position:relative;
+  }
+
+  .polaroid-photo{
+    aspect-ratio:1/1;
+    border-radius:2px;
+    overflow:hidden;
+    background:repeating-linear-gradient(135deg, #eae4d6 0 10px, #f2ede1 10px 20px);
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .polaroid-photo img{
+    width:100%; height:100%; object-fit:cover;
+    filter:grayscale(1) brightness(1.9) contrast(0.8);
+    transition:filter 1.1s ease;
+  }
+  .polaroid-photo img.developed{
+    filter:grayscale(0) brightness(1) contrast(1);
+  }
+
+  .placeholder-slot{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color:#b7ae98;
+    gap:10px;
+    text-align:center;
+    padding:20px;
+  }
+  .placeholder-slot i{font-size:34px; color:#c9bd9e;}
+  .placeholder-slot span{font-size:13px; font-weight:600; color:#8d836a;}
+  .placeholder-slot small{font-size:11px; color:#a89c7c;}
+
+  .polaroid-caption{
+    margin-top:14px;
+    min-height:26px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+  }
+
+  .caption-hint{
+    font-size:11.5px;
+    color:#a89c7c;
+    font-family:'JetBrains Mono',monospace;
+  }
+
+  .caption-url{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:#2f6e66;
+    font-weight:600;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    flex:1;
+  }
+
+  .copy-chip{
+    background:#2f6e66;
+    color:#f2fbf9;
+    border:none;
+    border-radius:8px;
+    padding:6px 10px;
+    font-size:11px;
+    font-weight:700;
+    flex-shrink:0;
+    transition:transform .15s, background .2s;
+  }
+  .copy-chip:active{transform:scale(0.94);}
+  .copy-chip.copied{background:#1f8f7a;}
+
+  /* shutter button */
+  .shutter-btn{
+    position:absolute;
+    left:50%;
+    bottom:-32px;
+    transform:translateX(-50%);
+    width:70px; height:70px;
+    border-radius:50%;
+    background:var(--flash);
+    border:6px solid var(--bg-deep);
+    box-shadow:0 0 0 3px var(--flash-deep), 0 14px 28px rgba(255,200,87,0.35);
+    display:flex; align-items:center; justify-content:center;
+    color:#26200f;
+    font-size:22px;
+    transition:transform .2s, opacity .3s;
+  }
+  .shutter-btn:active{transform:translateX(-50%) scale(0.92);}
+  .shutter-btn.away{opacity:0; transform:translateX(-50%) scale(0.4); pointer-events:none;}
+
+  .shutter-btn .spin{
+    width:20px; height:20px;
+    border:3px solid rgba(38,32,15,0.25);
+    border-top-color:#26200f;
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .reupload-link{
+    display:block;
+    text-align:center;
+    margin-top:44px;
+    color:var(--teal);
+    font-size:13px;
+    font-weight:700;
+    background:none;
+    border:none;
+  }
+
+  /* full-screen flash pulse */
+  #flash-pulse{
+    position:fixed; inset:0; background:#fff;
+    opacity:0; pointer-events:none; z-index:9990;
+  }
+  #flash-pulse.pulse{
+    animation:flashpulse .55s ease-out;
+  }
+  @keyframes flashpulse{
+    0%{opacity:0;}
+    12%{opacity:0.9;}
+    100%{opacity:0;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .polaroid-photo img, #flash-pulse.pulse, .shutter-btn{transition:none; animation:none;}
+  }
+
+  /* ---------- history grid ---------- */
+  .history-empty{
+    text-align:center;
+    color:var(--ink-dim);
+    margin-top:60px;
+    padding:0 20px;
+    font-size:13.5px;
+    line-height:1.8;
+  }
+  .history-empty i{font-size:30px; color:var(--surface-3); margin-bottom:12px; display:block;}
+
+  .history-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:14px;
+    padding-bottom:20px;
+  }
+
+  .history-card{
+    background:var(--paper);
+    border-radius:8px;
+    padding:8px 8px 12px 8px;
+    box-shadow:0 10px 20px rgba(0,0,0,0.3);
+  }
+  .history-card img{
+    width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:3px; background:#e9e2d2;
+  }
+  .history-card .h-url{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:#2f6e66;
+    margin-top:8px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .history-card button{
+    width:100%;
+    margin-top:8px;
+    background:#2f6e66;
+    color:#f2fbf9;
+    border:none;
+    border-radius:6px;
+    padding:6px;
+    font-size:10.5px;
+    font-weight:700;
+  }
+  .history-card button.copied{background:#1f8f7a;}
+
+  /* ---------- settings ---------- */
+  .settings-card{
+    background:var(--surface);
+    border:1px solid var(--surface-3);
+    border-radius:18px;
+    padding:22px;
+    max-width:360px;
+    margin:16px auto 0 auto;
+  }
+  .settings-label{
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-dim);
+    display:block;
+    margin-bottom:8px;
+  }
+
+  .view-title{
+    font-weight:700;
+    font-size:20px;
+    margin:14px 0 4px 0;
+    text-align:center;
+  }
+
+  /* ---------- filmstrip nav ---------- */
+  .filmstrip-nav{
+    background:var(--surface);
+    border-top:1px solid var(--surface-3);
+    position:relative;
+    display:flex;
+    padding:10px 8px 14px 8px;
+  }
+  .filmstrip-nav::before{
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:5px;
+    background-image:repeating-linear-gradient(90deg, var(--bg-deep) 0 7px, transparent 7px 16px);
+  }
+  .nav-item{
+    flex:1;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    background:none; border:none;
+    color:var(--ink-dim);
+    padding:6px 0;
+    transition:color .2s;
+  }
+  .nav-item i{font-size:18px;}
+  .nav-item span{font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;}
+  .nav-item.active{color:var(--flash);}
 </style>
-  </head>
-  <body class="text-slate-800 h-screen flex flex-col justify-between">
+</head>
+<body class="grain-bg">
 
-    <div id="offline-screen">
-      <h1 class="text-xl font-bold text-red-600">🔴 No Internet Connection</h1>
-      <p class="text-slate-400 text-sm mt-2"></p>
+  <div id="offline-screen">
+    <i class="fas fa-plug-circle-xmark" style="font-size:36px;color:var(--danger);margin-bottom:14px;"></i>
+    <h1 style="font-size:18px;font-weight:700;color:var(--ink);margin:0;">ইন্টারনেট সংযোগ নেই</h1>
+    <p style="color:var(--ink-dim);font-size:13px;margin-top:8px;">সংযোগ ফিরে এলে অ্যাপ আবার চালু হবে।</p>
+  </div>
+
+  <!-- FIRST-RUN API KEY SETUP -->
+  <div id="api-setup-screen">
+    <div class="setup-card">
+      <div style="display:flex;justify-content:center;margin-bottom:16px;">
+        <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,200,87,0.12);display:flex;align-items:center;justify-content:center;">
+          <i class="fas fa-key" style="color:var(--flash);font-size:22px;"></i>
+        </div>
+      </div>
+      <h2 style="text-align:center;font-size:19px;font-weight:700;margin:0 0 6px 0;">imgbb API Key দিন</h2>
+      <p style="text-align:center;color:var(--ink-dim);font-size:13px;margin:0 0 20px 0;line-height:1.7;">
+        ছবি আপলোড করে লিংক তৈরি করতে একটি ফ্রি API Key প্রয়োজন।
+      </p>
+
+      <input type="text" id="api-key-input" class="field" placeholder="এখানে Key পেস্ট করুন" style="margin-bottom:12px;">
+      <button id="save-api-key-btn" class="btn-flash" style="width:100%;padding:14px;border-radius:12px;font-size:15px;border:none;margin-bottom:18px;" disabled>
+        সংরক্ষণ করুন
+      </button>
+
+      <div class="help-box">
+        <b>Key কীভাবে পাবেন</b><br>
+        ১. api.imgbb.com এ যান<br>
+        ২. ফ্রি অ্যাকাউন্ট বানান বা লগইন করুন<br>
+        ৩. ড্যাশবোর্ডে দেখানো API Key কপি করুন<br>
+        ৪. উপরে পেস্ট করে সংরক্ষণ করুন
+      </div>
+      <a href="https://api.imgbb.com/" target="_blank" class="btn-ghost" style="display:block;text-align:center;padding:12px;border-radius:12px;margin-top:14px;text-decoration:none;font-size:13px;">
+        api.imgbb.com এ যান <i class="fas fa-arrow-up-right-from-square" style="font-size:11px;"></i>
+      </a>
+    </div>
+  </div>
+
+  <div id="flash-pulse"></div>
+
+  <div id="main-content">
+
+    <div class="topbar">
+      <div style="display:flex;align-items:baseline;gap:8px;">
+        <span class="brand" style="font-size:24px;color:var(--ink);">ImgURL</span>
+        <span class="mono" style="font-size:10px;color:var(--ink-dim);">ছবি → লিংক</span>
+      </div>
+      <button class="icon-btn" id="settings-btn"><i class="fas fa-gear"></i></button>
     </div>
 
-    <!-- FIRST-TIME API KEY SETUP SCREEN -->
-    <div id="api-setup-screen">
-      <div class="glass-panel w-full max-w-sm p-6">
-        <div class="flex justify-center mb-4">
-          <div class="bg-blue-50 p-4 rounded-full">
-            <i class="fas fa-key text-3xl text-blue-500"></i>
+    <!-- HOME -->
+    <div id="main-view" class="view">
+      <div id="upload-state">
+        <div class="polaroid-wrap">
+          <div class="polaroid">
+            <div class="polaroid-photo" onclick="document.getElementById('fileInput').click()" style="cursor:pointer;">
+              <div class="placeholder-slot">
+                <i class="fas fa-camera-retro"></i>
+                <span>ছবি বাছাই করতে ট্যাপ করুন</span>
+                <small>যেকোনো সাইজের ছবি সাপোর্ট করে</small>
+              </div>
+              <input type="file" id="fileInput" class="hidden" accept="image/*">
+            </div>
+            <div class="polaroid-caption">
+              <span class="caption-hint">ছবি এখনো যোগ করা হয়নি</span>
+            </div>
           </div>
         </div>
-        <h2 class="text-xl font-bold text-center text-slate-900 mb-2">ImgURL API Key দিন</h2>
-        <p class="text-center text-sm text-slate-500 mb-5 leading-relaxed">
-          ছবি আপলোড করতে imgbb.com এর একটি ফ্রি API Key প্রয়োজন।
-        </p>
+      </div>
 
-        <input type="text" id="api-key-input" placeholder="আপনার API Key এখানে পেস্ট করুন"
-          class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm mb-3 focus:outline-none focus:border-blue-400" />
-
-        <button id="save-api-key-btn" class="btn-main w-full py-4 rounded-xl font-bold text-lg mb-4" disabled>
-          সংরক্ষণ করুন
-        </button>
-
-        <div class="bg-slate-50 rounded-xl p-4 text-xs text-slate-600 leading-relaxed">
-          <p class="font-bold mb-1 text-slate-700">API Key কীভাবে পাবেন:</p>
-          <p>১. api.imgbb.com এ যান</p>
-          <p>২. ফ্রি অ্যাকাউন্ট বানান / লগইন করুন</p>
-          <p>৩. লগইনের পর পেজে থাকা API Key কপি করুন</p>
-          <p>৪. এখানে পেস্ট করে সংরক্ষণ করুন</p>
+      <div id="result-state" class="hidden">
+        <div class="polaroid-wrap">
+          <div class="polaroid">
+            <div class="polaroid-photo">
+              <img id="preview-img" src="" alt="Preview">
+            </div>
+            <div class="polaroid-caption" id="caption-area">
+              <span class="caption-hint">শাটারে চাপ দিয়ে লিংক তৈরি করুন</span>
+            </div>
+            <button id="create-btn" class="shutter-btn" title="লিংক তৈরি করুন">
+              <i class="fas fa-bolt"></i>
+            </button>
+          </div>
         </div>
-        <a href="https://api.imgbb.com/" target="_blank"
-          class="block text-center text-blue-600 text-sm font-bold mt-4 underline">
-          api.imgbb.com এ যান →
+        <button id="upload-another-btn" class="reupload-link hidden">+ নতুন ছবি আপলোড করুন</button>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="history-view" class="view hidden">
+      <div class="view-title">হিস্ট্রি</div>
+      <div id="history-list"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="settings-view" class="view hidden">
+      <div class="view-title">সেটিংস</div>
+      <div class="settings-card">
+        <span class="settings-label">imgbb API Key</span>
+        <input type="text" id="settings-api-key-input" class="field" placeholder="API Key" style="margin-bottom:14px;">
+        <button id="settings-save-btn" class="btn-flash" style="width:100%;padding:12px;border-radius:12px;font-size:14px;border:none;">
+          আপডেট করুন
+        </button>
+        <a href="https://api.imgbb.com/" target="_blank" class="btn-ghost" style="display:block;text-align:center;padding:11px;border-radius:12px;margin-top:12px;text-decoration:none;font-size:12.5px;">
+          নতুন API Key নিন <i class="fas fa-arrow-up-right-from-square" style="font-size:10px;"></i>
         </a>
       </div>
     </div>
 
-    <div id="main-content" class="flex flex-col h-full">
-      <div id="main-view" class="flex-1 p-6 flex flex-col items-center justify-start pt-8">
-        <div class="w-full max-w-sm flex justify-between items-center mb-6">
-          <h1 class="text-2xl font-bold tracking-tight text-slate-900">Upload Image</h1>
-          <button id="settings-btn" class="text-slate-400 text-xl w-10 h-10 flex items-center justify-center rounded-full active:bg-slate-100">
-            <i class="fas fa-gear"></i>
-          </button>
-        </div>
-
-        <div id="upload-state" class="w-full max-w-sm">
-          <div class="glass-panel p-8 upload-zone flex flex-col items-center justify-center cursor-pointer h-64" onclick="document.getElementById('fileInput').click()">
-            <div class="bg-white p-4 rounded-full shadow-sm mb-4">
-              <i class="fas fa-cloud-upload-alt text-4xl text-blue-500"></i>
-            </div>
-            <h3 class="font-semibold text-slate-700">Tap to Upload</h3>
-            <p class="text-xs text-slate-400 mt-2">Supports JPG, PNG</p>
-            <input type="file" id="fileInput" class="hidden" accept="image/*">
-          </div>
-        </div>
-
-        <div id="result-state" class="w-full max-w-sm hidden">
-          <div class="glass-panel p-5">
-            <div class="w-full h-64 bg-slate-50 rounded-2xl mb-5 overflow-hidden flex items-center justify-center relative">
-              <img id="preview-img" src="" class="max-w-full max-h-full object-contain" alt="Preview">
-              <div id="loading-overlay" class="absolute inset-0 bg-white/80 flex items-center justify-center hidden">
-                <div class="loader"></div>
-              </div>
-            </div>
-
-            <button id="create-btn" class="btn-main w-full py-4 rounded-xl font-bold text-lg mb-0">
-              CREATE URL
-            </button>
-
-            <div id="copy-section" class="hidden mt-4 animate-fade-in">
-              <div class="bg-slate-50 p-3 rounded-lg mb-4 border border-slate-100 text-center">
-                <p id="generated-link" class="text-blue-600 font-medium text-sm truncate url-text">...</p>
-              </div>
-              <button id="copy-btn" class="btn-main w-full py-4 rounded-xl font-bold text-lg bg-blue-600 hover:bg-blue-700">
-                COPY
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <button id="upload-another-btn" class="hidden text-blue-600 text-sm font-bold mt-4">
-          + নতুন ছবি আপলোড করুন
-        </button>
-      </div>
-
-      <div id="history-view" class="flex-1 p-6 flex flex-col pt-10 hidden bg-white">
-        <h1 class="text-2xl font-bold mb-6 tracking-tight text-slate-900 text-center">History</h1>
-        <div id="history-list" class="space-y-3 overflow-y-auto pb-24"></div>
-      </div>
-
-      <div id="settings-view" class="flex-1 p-6 flex flex-col pt-10 hidden bg-white">
-        <h1 class="text-2xl font-bold mb-6 tracking-tight text-slate-900 text-center">Settings</h1>
-        <div class="glass-panel p-5 max-w-sm w-full mx-auto">
-          <label class="text-xs font-bold text-slate-500 uppercase mb-2 block">imgbb API Key</label>
-          <input type="text" id="settings-api-key-input" placeholder="API Key"
-            class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm mb-3 focus:outline-none focus:border-blue-400" />
-          <button id="settings-save-btn" class="btn-main w-full py-3 rounded-xl font-bold text-sm">
-            আপডেট করুন
-          </button>
-          <a href="https://api.imgbb.com/" target="_blank" class="block text-center text-blue-600 text-xs font-bold mt-4 underline">
-            নতুন API Key নিন →
-          </a>
-        </div>
-      </div>
-
-      <div class="bg-white border-t border-slate-100 h-20 flex justify-around items-center pb-2 sticky bottom-0 w-full z-50">
-        <button onclick="switchTab('home')" class="flex flex-col items-center space-y-1 w-1/3 text-blue-600" id="nav-home">
-          <i class="fas fa-home text-xl"></i>
-          <span class="text-[10px] font-bold uppercase tracking-wider">Home</span>
-        </button>
-        <button onclick="switchTab('history')" class="flex flex-col items-center space-y-1 w-1/3 text-slate-400" id="nav-history">
-          <i class="fas fa-clock text-xl"></i>
-          <span class="text-[10px] font-bold uppercase tracking-wider">History</span>
-        </button>
-        <button onclick="switchTab('settings')" class="flex flex-col items-center space-y-1 w-1/3 text-slate-400" id="nav-settings">
-          <i class="fas fa-gear text-xl"></i>
-          <span class="text-[10px] font-bold uppercase tracking-wider">Settings</span>
-        </button>
-      </div>
+    <div class="filmstrip-nav">
+      <button class="nav-item active" id="nav-home" onclick="switchTab('home')">
+        <i class="fas fa-house"></i><span>হোম</span>
+      </button>
+      <button class="nav-item" id="nav-history" onclick="switchTab('history')">
+        <i class="fas fa-clock-rotate-left"></i><span>হিস্ট্রি</span>
+      </button>
+      <button class="nav-item" id="nav-settings" onclick="switchTab('settings')">
+        <i class="fas fa-gear"></i><span>সেটিংস</span>
+      </button>
     </div>
 
+  </div>
+
 <script>
-        // --- INTERNET CHECK LOGIC ---
-        const offlineScreen = document.getElementById('offline-screen');
-        const mainContent = document.getElementById('main-content');
+  // ---------- ONLINE / OFFLINE ----------
+  const offlineScreen = document.getElementById('offline-screen');
+  const mainContent = document.getElementById('main-content');
+  function updateOnlineStatus(){
+    if(navigator.onLine){
+      offlineScreen.style.display = 'none';
+      mainContent.style.display = 'flex';
+    }else{
+      offlineScreen.style.display = 'flex';
+      mainContent.style.display = 'none';
+    }
+  }
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+  updateOnlineStatus();
 
-        function updateOnlineStatus() {
-            if (navigator.onLine) {
-                offlineScreen.style.display = "none";
-                mainContent.style.display = "flex";
-            } else {
-                offlineScreen.style.display = "flex";
-                mainContent.style.display = "none";
-            }
-        }
+  // ---------- API KEY ----------
+  const apiSetupScreen = document.getElementById('api-setup-screen');
+  const apiKeyInput = document.getElementById('api-key-input');
+  const saveApiKeyBtn = document.getElementById('save-api-key-btn');
+  const settingsApiKeyInput = document.getElementById('settings-api-key-input');
+  const settingsSaveBtn = document.getElementById('settings-save-btn');
 
-        window.addEventListener('online', updateOnlineStatus);
-        window.addEventListener('offline', updateOnlineStatus);
-        updateOnlineStatus();
+  function getApiKey(){ return localStorage.getItem('imgbb_api_key') || ''; }
 
-        // --- API KEY SETUP LOGIC (first run) ---
-        const apiSetupScreen = document.getElementById('api-setup-screen');
-        const apiKeyInput = document.getElementById('api-key-input');
-        const saveApiKeyBtn = document.getElementById('save-api-key-btn');
-        const settingsApiKeyInput = document.getElementById('settings-api-key-input');
-        const settingsSaveBtn = document.getElementById('settings-save-btn');
+  function checkFirstRun(){
+    const key = getApiKey();
+    if(!key){
+      apiSetupScreen.style.display = 'flex';
+    }else{
+      apiSetupScreen.style.display = 'none';
+      settingsApiKeyInput.value = key;
+    }
+  }
 
-        function getApiKey() {
-            return localStorage.getItem('imgbb_api_key') || "";
-        }
+  apiKeyInput.addEventListener('input', () => {
+    saveApiKeyBtn.disabled = apiKeyInput.value.trim().length === 0;
+  });
 
-        function checkFirstRun() {
-            const key = getApiKey();
-            if (!key) {
-                apiSetupScreen.style.display = "flex";
-            } else {
-                apiSetupScreen.style.display = "none";
-                settingsApiKeyInput.value = key;
-            }
-        }
+  saveApiKeyBtn.addEventListener('click', () => {
+    const key = apiKeyInput.value.trim();
+    if(!key) return;
+    localStorage.setItem('imgbb_api_key', key);
+    apiSetupScreen.style.display = 'none';
+    settingsApiKeyInput.value = key;
+  });
 
-        apiKeyInput.addEventListener('input', () => {
-            saveApiKeyBtn.disabled = apiKeyInput.value.trim().length === 0;
+  settingsSaveBtn.addEventListener('click', () => {
+    const key = settingsApiKeyInput.value.trim();
+    if(!key){ alert('একটি বৈধ API Key দিন।'); return; }
+    localStorage.setItem('imgbb_api_key', key);
+    settingsSaveBtn.innerText = 'সংরক্ষিত হয়েছে ✓';
+    setTimeout(()=> settingsSaveBtn.innerText = 'আপডেট করুন', 1400);
+  });
+
+  checkFirstRun();
+
+  // ---------- ELEMENTS ----------
+  const fileInput = document.getElementById('fileInput');
+  const uploadState = document.getElementById('upload-state');
+  const resultState = document.getElementById('result-state');
+  const previewImg = document.getElementById('preview-img');
+  const createBtn = document.getElementById('create-btn');
+  const captionArea = document.getElementById('caption-area');
+  const uploadAnotherBtn = document.getElementById('upload-another-btn');
+  const flashPulse = document.getElementById('flash-pulse');
+
+  let currentImageFile = null;
+  let finalUrl = '';
+
+  // ---------- HANDLE ANY IMAGE SIZE ----------
+  // imgbb accepts up to ~32MB. Anything larger is auto-compressed on-device
+  // so uploads never fail just because the original photo was too big.
+  const IMGBB_MAX_BYTES = 30 * 1024 * 1024;
+
+  function loadImageEl(file){
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => resolve({ img, url });
+      img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+      img.src = url;
+    });
+  }
+
+  async function compressImage(file, maxBytes){
+    const { img, url } = await loadImageEl(file);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    let scale = 1;
+    let quality = 0.9;
+
+    // cap the longest side early for very high-resolution photos
+    const longSide = Math.max(img.width, img.height);
+    if(longSide > 4096){ scale = 4096 / longSide; }
+
+    async function render(){
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+    }
+
+    let blob = await render();
+    let attempts = 0;
+    while(blob && blob.size > maxBytes && attempts < 10){
+      attempts++;
+      if(quality > 0.5){ quality -= 0.1; }
+      else { scale *= 0.8; }
+      blob = await render();
+    }
+
+    URL.revokeObjectURL(url);
+    if(!blob || blob.size > maxBytes){ throw new Error('too_large'); }
+
+    const baseName = (file.name || 'image').replace(/\.[^.]+$/, '');
+    return new File([blob], baseName + '.jpg', { type: 'image/jpeg' });
+  }
+
+  async function prepareImageForUpload(file){
+    if(file.size <= IMGBB_MAX_BYTES) return file;
+    return await compressImage(file, IMGBB_MAX_BYTES);
+  }
+
+  function copyTextFallback(text){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); }catch(e){ console.error(e); }
+    document.body.removeChild(ta);
+  }
+
+  fileInput.addEventListener('change', (e) => {
+    if(e.target.files && e.target.files[0]){
+      currentImageFile = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        previewImg.src = ev.target.result;
+        previewImg.classList.remove('developed');
+        uploadState.classList.add('hidden');
+        resultState.classList.remove('hidden');
+        createBtn.classList.remove('away');
+        createBtn.innerHTML = '<i class="fas fa-bolt"></i>';
+        captionArea.innerHTML = '<span class="caption-hint">শাটারে চাপ দিয়ে লিংক তৈরি করুন</span>';
+        uploadAnotherBtn.classList.add('hidden');
+      };
+      reader.readAsDataURL(currentImageFile);
+    }
+  });
+
+  createBtn.addEventListener('click', async () => {
+    if(!currentImageFile) return;
+    const apiKey = getApiKey();
+    if(!apiKey){ apiSetupScreen.style.display = 'flex'; return; }
+
+    createBtn.disabled = true;
+    createBtn.innerHTML = '<span class="spin"></span>';
+
+    let uploadFile;
+    try{
+      uploadFile = await prepareImageForUpload(currentImageFile);
+    }catch(e){
+      alert('ছবিটি অনেক বড়। ছোট করার পরও আপলোডযোগ্য সাইজে আনা যায়নি।');
+      createBtn.disabled = false;
+      createBtn.innerHTML = '<i class="fas fa-bolt"></i>';
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('image', uploadFile);
+
+    try{
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+
+      if(data.success){
+        finalUrl = data.data.url;
+        const thumbUrl = data.data.thumb.url;
+
+        // flash + develop effect
+        flashPulse.classList.add('pulse');
+        previewImg.classList.add('developed');
+        setTimeout(() => flashPulse.classList.remove('pulse'), 600);
+
+        createBtn.classList.add('away');
+        captionArea.innerHTML = `
+          <span class="caption-url" id="generated-link">${finalUrl}</span>
+          <button class="copy-chip" id="copy-btn">COPY</button>
+        `;
+        document.getElementById('copy-btn').addEventListener('click', () => {
+          copyTextFallback(finalUrl);
+          const btn = document.getElementById('copy-btn');
+          btn.innerText = 'হয়েছে ✓';
+          btn.classList.add('copied');
+          setTimeout(() => { btn.innerText = 'COPY'; btn.classList.remove('copied'); }, 1400);
         });
 
-        saveApiKeyBtn.addEventListener('click', () => {
-            const key = apiKeyInput.value.trim();
-            if (!key) return;
-            localStorage.setItem('imgbb_api_key', key);
-            apiSetupScreen.style.display = "none";
-            settingsApiKeyInput.value = key;
-        });
+        uploadAnotherBtn.classList.remove('hidden');
+        addToHistory(finalUrl, thumbUrl);
+      }else{
+        alert('আপলোড ব্যর্থ হয়েছে। আপনার API Key ঠিক আছে কিনা দেখুন।');
+        createBtn.disabled = false;
+        createBtn.innerHTML = '<i class="fas fa-bolt"></i>';
+      }
+    }catch(err){
+      alert('নেটওয়ার্ক সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      createBtn.disabled = false;
+      createBtn.innerHTML = '<i class="fas fa-bolt"></i>';
+    }
+  });
 
-        settingsSaveBtn.addEventListener('click', () => {
-            const key = settingsApiKeyInput.value.trim();
-            if (!key) {
-                alert('অনুগ্রহ করে একটি বৈধ API Key দিন।');
-                return;
-            }
-            localStorage.setItem('imgbb_api_key', key);
-            alert('API Key আপডেট করা হয়েছে।');
-        });
+  uploadAnotherBtn.addEventListener('click', () => {
+    currentImageFile = null;
+    finalUrl = '';
+    fileInput.value = '';
+    resultState.classList.add('hidden');
+    uploadState.classList.remove('hidden');
+    uploadAnotherBtn.classList.add('hidden');
+    createBtn.disabled = false;
+  });
 
-        checkFirstRun();
+  // ---------- TABS ----------
+  function switchTab(tab){
+    const views = { home: document.getElementById('main-view'), history: document.getElementById('history-view'), settings: document.getElementById('settings-view') };
+    const navs = { home: document.getElementById('nav-home'), history: document.getElementById('nav-history'), settings: document.getElementById('nav-settings') };
+    Object.keys(views).forEach(k => {
+      views[k].classList.toggle('hidden', k !== tab);
+      navs[k].classList.toggle('active', k === tab);
+    });
+    if(tab === 'history') renderHistory();
+  }
+  document.getElementById('settings-btn').addEventListener('click', () => switchTab('settings'));
 
-        // --- ELEMENTS ---
-        const fileInput = document.getElementById('fileInput');
-        const uploadState = document.getElementById('upload-state');
-        const resultState = document.getElementById('result-state');
-        const previewImg = document.getElementById('preview-img');
-        const createBtn = document.getElementById('create-btn');
-        const copySection = document.getElementById('copy-section');
-        const generatedLinkText = document.getElementById('generated-link');
-        const copyBtn = document.getElementById('copy-btn');
-        const uploadAnotherBtn = document.getElementById('upload-another-btn');
+  // ---------- HISTORY ----------
+  function addToHistory(url, thumb){
+    let history = JSON.parse(localStorage.getItem('app_history') || '[]');
+    history.unshift({ url, thumb, date: new Date().toISOString() });
+    if(history.length > 50) history.pop();
+    localStorage.setItem('app_history', JSON.stringify(history));
+  }
 
-        let currentImageFile = null;
-        let finalUrl = "";
+  function renderHistory(){
+    const list = document.getElementById('history-list');
+    const history = JSON.parse(localStorage.getItem('app_history') || '[]');
+    if(history.length === 0){
+      list.innerHTML = `
+        <div class="history-empty">
+          <i class="fas fa-images"></i>
+          এখনো কোনো ছবি আপলোড হয়নি।<br>প্রথম ছবিটি আপলোড করে শুরু করুন।
+        </div>`;
+      return;
+    }
+    list.innerHTML = `<div class="history-grid">${history.map((item, i) => `
+      <div class="history-card">
+        <img src="${item.thumb}" alt="">
+        <div class="h-url">${item.url}</div>
+        <button data-url="${item.url}" onclick="copyHistoryItem(this)">COPY</button>
+      </div>
+    `).join('')}</div>`;
+  }
 
-        // --- COPY FUNCTION ---
-        function copyTextFallback(text) {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            textArea.style.position = "fixed";
-            textArea.style.left = "-9999px";
-            textArea.style.top = "0";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try {
-                document.execCommand('copy');
-            } catch (err) {
-                console.error('Fallback: Oops, unable to copy', err);
-            }
-            document.body.removeChild(textArea);
-        }
-
-        // --- EVENT LISTENERS ---
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files && e.target.files[0]) {
-                currentImageFile = e.target.files[0];
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    previewImg.src = e.target.result;
-                    uploadState.classList.add('hidden');
-                    resultState.classList.remove('hidden');
-                    copySection.classList.add('hidden');
-                    createBtn.classList.remove('hidden');
-                    uploadAnotherBtn.classList.add('hidden');
-                };
-                reader.readAsDataURL(currentImageFile);
-            }
-        });
-
-        createBtn.addEventListener('click', async () => {
-            if (!currentImageFile) return;
-            const apiKey = getApiKey();
-            if (!apiKey) {
-                apiSetupScreen.style.display = "flex";
-                return;
-            }
-
-            createBtn.disabled = true;
-            createBtn.innerHTML = `<span class="loader"></span>`;
-
-            const formData = new FormData();
-            formData.append('image', currentImageFile);
-
-            try {
-                const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-
-                if (data.success) {
-                    finalUrl = data.data.url;
-                    const thumbUrl = data.data.thumb.url;
-                    generatedLinkText.innerText = finalUrl;
-                    createBtn.classList.add('hidden');
-                    copySection.classList.remove('hidden');
-                    uploadAnotherBtn.classList.remove('hidden');
-                    createBtn.disabled = false;
-                    createBtn.innerText = "CREATE URL";
-                    addToHistory(finalUrl, thumbUrl);
-                } else {
-                    alert('Upload failed. আপনার API Key সঠিক কিনা চেক করুন।');
-                    createBtn.disabled = false;
-                    createBtn.innerText = "CREATE URL";
-                }
-            } catch (error) {
-                alert('Network error.');
-                createBtn.disabled = false;
-                createBtn.innerText = "CREATE URL";
-            }
-        });
-
-        copyBtn.addEventListener('click', () => {
-            copyTextFallback(finalUrl);
-            copyBtn.innerText = "Copied!";
-            setTimeout(() => {
-                copyBtn.innerText = "COPY";
-            }, 1500);
-        });
-
-        uploadAnotherBtn.addEventListener('click', () => {
-            currentImageFile = null;
-            finalUrl = "";
-            fileInput.value = "";
-            resultState.classList.add('hidden');
-            uploadState.classList.remove('hidden');
-            uploadAnotherBtn.classList.add('hidden');
-        });
-
-        // --- TABS & HISTORY ---
-        function switchTab(tab) {
-            const homeView = document.getElementById('main-view');
-            const historyView = document.getElementById('history-view');
-            const settingsView = document.getElementById('settings-view');
-            const navHome = document.getElementById('nav-home');
-            const navHistory = document.getElementById('nav-history');
-            const navSettings = document.getElementById('nav-settings');
-
-            homeView.classList.add('hidden');
-            historyView.classList.add('hidden');
-            settingsView.classList.add('hidden');
-            navHome.classList.replace('text-blue-600', 'text-slate-400');
-            navHistory.classList.replace('text-blue-600', 'text-slate-400');
-            navSettings.classList.replace('text-blue-600', 'text-slate-400');
-
-            if (tab === 'home') {
-                homeView.classList.remove('hidden');
-                navHome.classList.replace('text-slate-400', 'text-blue-600');
-            } else if (tab === 'history') {
-                historyView.classList.remove('hidden');
-                navHistory.classList.replace('text-slate-400', 'text-blue-600');
-                renderHistory();
-            } else if (tab === 'settings') {
-                settingsView.classList.remove('hidden');
-                navSettings.classList.replace('text-slate-400', 'text-blue-600');
-            }
-        }
-
-        document.getElementById('settings-btn').addEventListener('click', () => switchTab('settings'));
-
-        function addToHistory(url, thumb) {
-            let history = JSON.parse(localStorage.getItem('app_history') || '[]');
-            const newItem = { url: url, thumb: thumb, date: new Date().toISOString() };
-            history.unshift(newItem);
-            if(history.length > 50) history.pop();
-            localStorage.setItem('app_history', JSON.stringify(history));
-        }
-
-        function renderHistory() {
-            const listContainer = document.getElementById('history-list');
-            const history = JSON.parse(localStorage.getItem('app_history') || '[]');
-            if (history.length === 0) {
-                listContainer.innerHTML = `<div class="text-center text-slate-400 mt-10">No history available</div>`;
-                return;
-            }
-            listContainer.innerHTML = history.map((item) => `
-                <div class="glass-panel p-3 flex items-center gap-4">
-                    <img src="${item.thumb}" class="w-16 h-16 rounded-lg object-cover bg-slate-100">
-                    <div class="flex-1 min-w-0">
-                        <div class="text-xs text-slate-500 mb-1">Generated Link</div>
-                        <div class="text-sm font-bold text-blue-600 truncate url-text mb-2">${item.url}</div>
-                    </div>
-                    <button onclick="copyHistoryItem('${item.url}', this)" class="bg-blue-600 text-white w-16 h-10 rounded-lg text-xs font-bold shadow-md active:scale-95 transition-transform">
-                        COPY
-                    </button>
-                </div>
-            `).join('');
-        }
-
-        function copyHistoryItem(url, btnElement) {
-            copyTextFallback(url);
-            const originalText = btnElement.innerText;
-            btnElement.innerText = "OK";
-            btnElement.style.backgroundColor = "#059669";
-            setTimeout(() => {
-                btnElement.innerText = originalText;
-                btnElement.style.backgroundColor = "#2563eb";
-            }, 1500);
-        }
+  function copyHistoryItem(btn){
+    const url = btn.getAttribute('data-url');
+    copyTextFallback(url);
+    const original = btn.innerText;
+    btn.innerText = 'হয়েছে ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.innerText = original; btn.classList.remove('copied'); }, 1400);
+  }
 </script>
-  </body>
+</body>
 </html>
