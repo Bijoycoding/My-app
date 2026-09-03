@@ -1,750 +1,573 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Build APK</title>
+<title>BcodStore Admin</title>
+<link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+  (function(){
+    var saved = localStorage.getItem('bcodstore_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+  })();
+  window.__tryLogo = function(img, remaining){
+    if (!remaining || !remaining.length){ img.style.display = 'none'; return; }
+    var next = remaining.shift();
+    img.onerror = function(){ window.__tryLogo(img, remaining); };
+    img.src = next;
+  };
+</script>
 <style>
   :root{
-    --bg:#f3f5fb;
-    --panel:#ffffff;
-    --panel-raised:#fffaf0;
-    --grid:#e8ebf5;
-    --hair:#dfe3ef;
-    --ink:#161c2e;
-    --muted:#6a7290;
-    --muted-dim:#a6acc4;
-    --brass:#b8791d;
-    --brass-fill:#dda23f;
-    --brass-soft:#fbead0;
-    --signal:#128a72;
-    --danger:#c9433b;
-    --console-bg:#0c0f1a;
-    --console-text:#93a0c2;
-    --console-ok:#4fd1a5;
-    --console-now:#e0a742;
-    --console-err:#ff8686;
-    --sans:'Inter', -apple-system, sans-serif;
-    --display:'Space Grotesk', var(--sans);
-    --mono:'IBM Plex Mono', monospace;
+    --bg:#F6F7F9;
+    --surface:#FFFFFF;
+    --surface-2:#EEF1F5;
+    --text:#141A21;
+    --text-dim:#6B7684;
+    --accent:#FFB020;
+    --accent-ink:#1A1200;
+    --danger:#E5484D;
+    --line:#E3E7EC;
+    --glass-bg:rgba(255,255,255,0.55);
+    --glass-border:rgba(255,255,255,0.65);
+    --glass-blur:18px;
+    --blob-1:rgba(255,176,32,0.16);
+    --blob-2:rgba(80,140,255,0.14);
   }
-  *{box-sizing:border-box; margin:0; padding:0;}
+  [data-theme="dark"]{
+    --bg:#0F1720;
+    --surface:#172432;
+    --surface-2:#1E2C3D;
+    --text:#EDEEF0;
+    --text-dim:#8A94A6;
+    --line:#243244;
+    --glass-bg:rgba(23,36,50,0.55);
+    --glass-border:rgba(255,255,255,0.08);
+    --blob-1:rgba(255,176,32,0.10);
+    --blob-2:rgba(80,140,255,0.10);
+  }
+  *{box-sizing:border-box;}
   body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:'Inter',sans-serif;min-height:100vh;
+    position:relative;transition:background-color .2s ease,color .2s ease;
+  }
+  body::before{
+    content:'';position:fixed;inset:0;z-index:-1;
     background:
-      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/100% 28px,
-      var(--bg);
-    color:var(--ink);
-    font-family:var(--sans);
-    padding:18px 14px 40px;
-    line-height:1.5;
-    -webkit-tap-highlight-color:transparent;
+      radial-gradient(circle at 15% 10%, var(--blob-1), transparent 40%),
+      radial-gradient(circle at 85% 30%, var(--blob-2), transparent 38%),
+      radial-gradient(circle at 30% 90%, var(--blob-2), transparent 35%);
   }
-  .wrap{max-width:520px; margin:0 auto;}
+  h1,h2{font-family:'Space Grotesk',sans-serif;}
+  input,textarea{
+    width:100%;background:var(--surface);border:1px solid var(--line);
+    color:var(--text);padding:10px 12px;border-radius:8px;
+    font-family:'Inter',sans-serif;font-size:14px;outline:none;
+  }
+  input:focus,textarea:focus{border-color:var(--accent);}
+  label{font-size:12px;color:var(--text-dim);display:block;margin:14px 0 6px;}
+  label:first-child{margin-top:0;}
+  button{font-family:'Inter',sans-serif;cursor:pointer;border:none;}
 
-  /* ---------- Header ---------- */
-  header{
-    display:flex; align-items:flex-end; justify-content:space-between;
-    padding-bottom:16px; margin-bottom:18px; border-bottom:1px solid var(--hair);
+  /* ---- Login ---- */
+  .login-screen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
   }
-  header .title-block h1{
-    font-family:var(--display); font-weight:700; font-size:22px; letter-spacing:-.01em; color:var(--ink);
+  .login-box{
+    width:100%;max-width:340px;
+    background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));
+    -webkit-backdrop-filter:blur(var(--glass-blur));
+    border:1px solid var(--glass-border);border-radius:14px;padding:28px 24px;
   }
-  header .title-block p{font-size:12.5px; color:var(--muted); margin-top:3px;}
-  header .id-tag{
-    font-family:var(--mono); font-size:10.5px; color:var(--brass);
-    border:1px solid var(--brass-soft); background:var(--brass-soft); border-radius:4px; padding:3px 7px;
-    white-space:nowrap;
+  .login-box .brand{margin-bottom:6px;}
+  .login-box p{color:var(--text-dim);font-size:13px;margin:0 0 20px;}
+  .login-btn{
+    width:100%;margin-top:18px;background:var(--accent);color:var(--accent-ink);
+    font-weight:600;padding:11px;border-radius:8px;font-size:14px;
   }
+  .error-msg{color:var(--danger);font-size:13px;margin-top:10px;min-height:16px;}
 
-  /* ---------- Connection strip ---------- */
-  .connect{
-    border:1px solid var(--hair); border-radius:10px; margin-bottom:16px; overflow:hidden;
-    background:var(--panel);
+  /* ---- Brand badge (fixed colors, same in both themes) ---- */
+  .brand{
+    display:inline-flex;align-items:center;gap:7px;
+    background:#10151C;
+    padding:7px 13px 7px 8px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,0.08);
+    font-size:15px;font-weight:700;
   }
-  .connect summary{
-    list-style:none; cursor:pointer; padding:12px 14px;
-    display:flex; align-items:center; justify-content:space-between;
-    font-size:12.5px; color:var(--muted); font-weight:500;
+  .brand img{width:26px;height:26px;border-radius:7px;object-fit:cover;flex-shrink:0;}
+  .brand .bcod-part{color:#FFFFFF;}
+  .brand .store-part{color:#F4C542;}
+  .brand-logo-wrap{
+    position:relative;width:26px;height:26px;border-radius:7px;
+    overflow:hidden;flex-shrink:0;
+    background:linear-gradient(135deg, var(--accent), #FFC94D);
   }
-  .connect summary::-webkit-details-marker{display:none;}
-  .connect summary .dot{
-    width:6px; height:6px; border-radius:50%; background:var(--muted-dim); margin-right:8px; display:inline-block;
+  .brand-logo-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;}
+  .brand-logo-fallback{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    z-index:1;
   }
-  .connect summary .lead{display:flex; align-items:center;}
-  .connect summary .chev{font-family:var(--mono); transition:transform .15s;}
-  .connect[open] summary .chev{transform:rotate(90deg);}
-  .connect-body{padding:2px 14px 16px; border-top:1px solid var(--hair);}
+  .brand-logo-fallback svg{width:60%;height:60%;}
 
-  /* ---------- Section ---------- */
-  .section{margin-bottom:16px;}
-  .section-head{
-    display:flex; align-items:baseline; gap:9px; margin-bottom:10px; padding:0 2px;
+  /* ---- Dashboard ---- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 20px;
+    background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));
+    -webkit-backdrop-filter:blur(var(--glass-blur));
+    border-bottom:1px solid var(--glass-border);
+    position:sticky;top:0;z-index:5;
   }
-  .section-head .tag{
-    font-family:var(--mono); font-size:10.5px; color:var(--brass); letter-spacing:.02em;
+  .topbar-actions{display:flex;align-items:center;gap:8px;}
+  .theme-toggle{
+    width:34px;height:34px;border-radius:50%;
+    background:var(--glass-bg);border:1px solid var(--glass-border);
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px;
   }
-  .section-head h2{
-    font-family:var(--display); font-size:14px; font-weight:600; color:var(--ink);
+  .logout-btn{
+    background:var(--surface);color:var(--text);border:1px solid var(--line);
+    padding:8px 14px;border-radius:8px;font-size:13px;
   }
+  .layout{
+    max-width:1000px;margin:0 auto;padding:20px;
+    display:grid;grid-template-columns:340px 1fr;gap:20px;
+  }
+  @media (max-width:800px){ .layout{grid-template-columns:1fr;} }
+
   .panel{
-    background:var(--panel); border:1px solid var(--hair); border-radius:10px; padding:16px;
-    box-shadow:0 1px 2px rgba(20,26,46,.03);
+    background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));
+    -webkit-backdrop-filter:blur(var(--glass-blur));
+    border:1px solid var(--glass-border);
+    border-radius:14px;padding:18px;
   }
+  .panel h2{font-size:15px;margin:0 0 4px;}
+  .panel-sub{color:var(--text-dim);font-size:12px;margin:0 0 4px;}
 
-  .field{margin-bottom:13px;}
-  .field:last-child{margin-bottom:0;}
-  .field label{
-    display:block; font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:500;
-  }
-  input[type=text], input[type=password], textarea{
-    width:100%; background:#f7f8fc; border:1px solid var(--hair); border-radius:7px;
-    padding:11px 12px; font-size:14px; color:var(--ink); font-family:var(--sans);
-  }
-  input::placeholder, textarea::placeholder{color:var(--muted-dim);}
-  textarea{font-family:var(--mono); font-size:12px; min-height:130px; resize:vertical; line-height:1.6;}
-  input:focus, textarea:focus{outline:none; border-color:var(--brass);}
-  .field .note{font-size:11px; color:var(--muted-dim); margin-top:5px;}
-  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .checkbox-row{display:flex;align-items:center;gap:8px;margin-top:14px;}
+  .checkbox-row input{width:auto;}
+  .checkbox-row label{margin:0;font-size:13px;color:var(--text);}
 
-  /* ---------- segmented control ---------- */
-  .seg{
-    display:flex; background:#f7f8fc; border:1px solid var(--hair); border-radius:8px; padding:3px; margin-bottom:12px;
+  .form-actions{display:flex;gap:8px;margin-top:18px;}
+  .btn-primary{
+    flex:1;background:var(--accent);color:var(--accent-ink);
+    font-weight:600;padding:11px;border-radius:8px;font-size:14px;
   }
-  .seg-opt{
-    flex:1; text-align:center; padding:8px 6px; border-radius:6px; font-size:12.5px; font-weight:500;
-    color:var(--muted); cursor:pointer;
+  .btn-secondary{
+    background:var(--surface-2);color:var(--text);
+    padding:11px 14px;border-radius:8px;font-size:14px;border:1px solid var(--line);
   }
-  .seg-opt.active{background:#fff; color:var(--brass); border:1px solid var(--brass-soft); box-shadow:0 1px 3px rgba(20,26,46,.06);}
+  .form-msg{font-size:12px;margin-top:10px;min-height:14px;}
+  .form-msg.ok{color:#2FAF63;}
+  .form-msg.err{color:var(--danger);}
 
-  /* ---------- icon picker ---------- */
-  .icon-picker{display:flex; align-items:center; gap:12px;}
-  .icon-frame{
-    width:52px; height:52px; border-radius:11px; background:#f7f8fc; border:1px solid var(--hair);
-    display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;
+  #appList{position:relative;}
+  .app-row{
+    display:flex;gap:10px;align-items:center;
+    padding:10px 0;border-bottom:1px solid var(--line);
+    background:var(--bg);
+    touch-action:pan-y;
   }
-  .icon-frame img{width:100%; height:100%; object-fit:cover;}
-  .icon-frame .ph{font-size:18px; color:var(--muted-dim);}
-  .icon-choose{
-    flex:1; border:1px dashed var(--hair); border-radius:9px; padding:12px; text-align:center;
-    font-size:12.5px; color:var(--muted); cursor:pointer;
+  .app-row:last-child{border-bottom:none;}
+  .app-row.dragging{
+    position:relative;z-index:50;
+    box-shadow:0 8px 24px rgba(0,0,0,0.18);
+    border-radius:10px;
+    background:var(--surface);
   }
-  .icon-choose b{color:var(--ink); display:block; font-size:13px; margin-bottom:2px;}
-  #iconInput{display:none;}
-
-  /* ---------- toggles ---------- */
-  .toggle-list .toggle{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:11px 0; border-bottom:1px solid var(--hair);
+  .drag-handle{
+    width:26px;height:34px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text-dim);font-size:16px;letter-spacing:2px;
+    cursor:grab;touch-action:none;user-select:none;
   }
-  .toggle-list .toggle:last-child{border-bottom:none;}
-  .toggle .label{font-size:13.5px; font-weight:500; color:var(--ink);}
-  .auto-chip{
-    font-family:var(--mono); font-size:9px; font-weight:600; color:var(--brass);
-    background:var(--brass-soft); border-radius:5px; padding:1.5px 6px; margin-left:7px; letter-spacing:.02em;
-    vertical-align:middle;
+  .app-row img{
+    width:44px;height:44px;border-radius:22%;object-fit:cover;
+    background:var(--surface-2);border:1px solid var(--line);flex-shrink:0;
   }
-  .switch input:disabled + .rail{opacity:.55; cursor:not-allowed;}
-  .toggle .sub{font-size:11px; color:var(--muted); margin-top:2px;}
-  .switch{position:relative; width:42px; height:24px; flex-shrink:0;}
-  .switch input{opacity:0; width:0; height:0;}
-  .switch .rail{position:absolute; inset:0; background:var(--hair); border-radius:24px; transition:.18s;}
-  .switch .rail::before{
-    content:""; position:absolute; width:18px; height:18px; left:3px; top:3px;
-    background:#fff; border-radius:50%; transition:.18s; box-shadow:0 1px 3px rgba(20,26,46,.25);
+  .app-row .info{flex:1;min-width:0;}
+  .app-row .info .name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .app-row .info .meta{font-size:12px;color:var(--text-dim);}
+  .app-row .actions{display:flex;gap:6px;flex-shrink:0;}
+  .icon-btn{
+    width:30px;height:30px;border-radius:7px;
+    background:var(--surface-2);border:1px solid var(--line);color:var(--text);
+    font-size:13px;display:flex;align-items:center;justify-content:center;
   }
-  .switch input:checked + .rail{background:var(--brass-fill);}
-  .switch input:checked + .rail::before{transform:translateX(18px);}
-
-  /* ---------- build button ---------- */
-  .build-btn{
-    width:100%; background:var(--brass-fill); color:#241a05; border:none; border-radius:10px;
-    padding:16px; font-family:var(--display); font-size:14.5px; font-weight:700;
-    letter-spacing:.02em; cursor:pointer; margin-top:6px;
-    box-shadow:0 2px 8px rgba(221,162,63,.35);
-    position:relative; overflow:hidden;
-    display:flex; align-items:center; justify-content:center; gap:9px;
-    transition:box-shadow .3s ease;
+  .icon-btn.danger{color:var(--danger);}
+  .banner-tag{
+    font-size:10px;background:var(--accent);color:var(--accent-ink);
+    padding:2px 6px;border-radius:5px;font-weight:600;margin-left:6px;
   }
-  .build-btn:disabled{background:var(--hair); color:var(--muted-dim); box-shadow:none;}
-  .build-btn:active:not(:disabled){transform:translateY(1px);}
-  .build-btn.building{
-    background:var(--brass-fill); color:#241a05; cursor:default;
-    animation:btnGlow 1.8s ease-in-out infinite;
-  }
-  .build-btn.building::after{
-    content:""; position:absolute; inset:0;
-    background:linear-gradient(100deg, transparent 0%, rgba(255,255,255,.55) 45%, transparent 65%);
-    background-size:220% 100%;
-    animation:btnSheen 1.6s linear infinite;
-  }
-  @keyframes btnGlow{
-    0%,100%{ box-shadow:0 2px 8px rgba(221,162,63,.35); }
-    50%{ box-shadow:0 2px 22px rgba(221,162,63,.75); }
-  }
-  @keyframes btnSheen{
-    0%{ background-position:130% 0; }
-    100%{ background-position:-30% 0; }
-  }
-  .spinner-ring{
-    width:15px; height:15px; border-radius:50%;
-    border:2px solid rgba(36,26,5,.35); border-top-color:#241a05;
-    animation:spin .7s linear infinite; flex-shrink:0;
-  }
-  @keyframes spin{ to{ transform:rotate(360deg); } }
-
-  /* ---------- console/log (kept dark deliberately, like an embedded instrument panel) ---------- */
-  #statusPanel{display:none; margin-top:14px;}
-  #statusPanel.show{display:block;}
-  .progress-track{height:3px; background:var(--hair); border-radius:3px; overflow:hidden; margin-bottom:10px;}
-  .progress-fill{height:100%; background:var(--brass-fill); width:0%; transition:width .6s ease; position:relative; overflow:hidden;}
-  .progress-fill::after{
-    content:""; position:absolute; inset:0;
-    background:linear-gradient(100deg, transparent 0%, rgba(255,255,255,.6) 50%, transparent 100%);
-    background-size:200% 100%; animation:btnSheen 1.3s linear infinite;
-  }
-  .console{
-    background:var(--console-bg); border:1px solid #1c2338; border-radius:8px; padding:12px 13px;
-    font-family:var(--mono); font-size:11.5px; color:var(--console-text); max-height:210px; overflow-y:auto;
-    transition:box-shadow .3s ease;
-  }
-  #statusPanel.show .console{ animation:consolePulse 2.4s ease-in-out infinite; }
-  @keyframes consolePulse{
-    0%,100%{ box-shadow:0 0 0 rgba(224,167,66,0); }
-    50%{ box-shadow:0 0 0 1px rgba(224,167,66,.25); }
-  }
-  .console .row{padding:2.5px 0;}
-  .console .ok{color:var(--console-ok);}
-  .console .now{color:var(--console-now);}
-  .console .err{color:var(--console-err);}
-
-  /* ---------- result / manifest stub ---------- */
-  .result{display:none; margin-top:16px;}
-  .result.show{display:block;}
-  .manifest{
-    border:1px solid var(--brass-soft); border-radius:10px; overflow:hidden; background:var(--panel);
-    box-shadow:0 4px 16px rgba(20,26,46,.06);
-  }
-  .manifest .strip{
-    background:var(--brass-fill); color:#241a05; font-family:var(--mono); font-size:10.5px;
-    padding:6px 14px; letter-spacing:.03em;
-  }
-  .manifest .body{padding:20px 16px; text-align:center;}
-  .manifest .body h3{font-family:var(--display); font-size:16px; margin-bottom:4px; color:var(--ink);}
-  .manifest .body p{font-size:12px; color:var(--muted); margin-bottom:16px;}
-  .dl-btn{
-    display:inline-block; background:var(--ink); color:#fff; text-decoration:none;
-    font-weight:700; font-size:14px; padding:13px 28px; border-radius:9px; font-family:var(--display);
-  }
-  .link-row{
-    display:flex; gap:8px; margin-bottom:14px;
-  }
-  .link-row input{
-    flex:1; background:#f7f8fc; border:1px solid var(--hair); border-radius:8px;
-    padding:10px 11px; font-size:11.5px; font-family:var(--mono); color:var(--muted);
-  }
-  .copy-btn{
-    width:40px; height:40px; flex-shrink:0; border-radius:8px; background:var(--brass-fill);
-    color:#241a05; display:flex; align-items:center; justify-content:center;
-    font-size:16px; cursor:pointer;
-  }
-  .copy-btn.copied{background:var(--signal); color:#fff;}
-  .copy-btn:active{transform:scale(.93);}
-
-  /* ---------- history ---------- */
-  .hist-item{
-    display:flex; align-items:center; gap:11px;
-    padding:12px 0; border-bottom:1px solid var(--hair);
-  }
-  .hist-item:last-child{border-bottom:none;}
-  .hist-icon{
-    width:36px; height:36px; border-radius:9px; background:var(--brass-soft); color:var(--brass);
-    display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:13px; flex-shrink:0;
-  }
-  .hist-info{flex:1; min-width:0;}
-  .hist-info .name{font-size:13.5px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .hist-info .meta{font-size:11px; color:var(--muted); margin-top:1px;}
-  .hist-actions{display:flex; gap:6px; flex-shrink:0;}
-  .hist-btn{
-    width:32px; height:32px; border-radius:8px; border:1px solid var(--hair); background:#f7f8fc;
-    display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px;
-    color:var(--muted);
-  }
-  .hist-btn:active{transform:scale(.94);}
-  .hist-btn.danger:active{background:#fdecea;}
-  .hist-empty{font-size:12px; color:var(--muted-dim); text-align:center; padding:10px 0;}
+  .empty-list{color:var(--text-dim);font-size:13px;padding:20px 0;text-align:center;}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <header>
-    <div class="title-block">
-      <h1>Build APK</h1>
-      <p>ওয়েব প্রজেক্ট থেকে সরাসরি Android প্যাকেজ</p>
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="brand">
+      <span class="brand-logo-wrap">
+        <img src="logo.png" alt="" class="brand-logo-img" onerror="window.__tryLogo(this, ['./logo.png','Logo.png','LOGO.png','logo.PNG','logo.jpg','logo.jpeg','logo.svg'])">
+        <span class="brand-logo-fallback">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#1A1200" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 4v10"/>
+            <path d="M8 10l4 4 4-4"/>
+            <path d="M6 18h12"/>
+          </svg>
+        </span>
+      </span>
+      <span class="bcod-part">Bcod</span><span class="store-part">Store</span>
     </div>
-    <div class="id-tag">CAP · v6.2.1</div>
-  </header>
-
-  <details class="connect" id="connectBox">
-    <summary>
-      <span class="lead"><span class="dot"></span>GitHub সংযোগ</span>
-      <span class="chev">›</span>
-    </summary>
-    <div class="connect-body">
-      <div class="field">
-        <label>Personal access token</label>
-        <input type="password" id="pat" placeholder="ghp_xxxxxxxxxxxx">
-      </div>
-      <div class="grid2">
-        <div class="field">
-          <label>Owner</label>
-          <input type="text" id="owner" placeholder="Bijoycoding">
-        </div>
-        <div class="field">
-          <label>Repo</label>
-          <input type="text" id="repo" placeholder="power-notes">
-        </div>
-      </div>
-      <div class="grid2">
-        <div class="field">
-          <label>Workflow ফাইল</label>
-          <input type="text" id="workflowFile" value="build-apk.yml">
-        </div>
-        <div class="field">
-          <label>Branch</label>
-          <input type="text" id="branch" value="main">
-        </div>
-      </div>
-    </div>
-  </details>
-
-  <div class="section">
-    <div class="section-head"><span class="tag">01</span><h2>অ্যাপের পরিচয়</h2></div>
-    <div class="panel">
-      <div class="field">
-        <label>App name</label>
-        <input type="text" id="appName" placeholder="My Web App">
-      </div>
-      <div class="field">
-        <label>Package name</label>
-        <input type="text" id="appId" placeholder="com.myapp.main">
-        <p class="note">ছোট হাতের অক্ষর, ডট দিয়ে আলাদা — com.bijoy.powernotes</p>
-      </div>
-      <div class="grid2">
-        <div class="field">
-          <label>Version name</label>
-          <input type="text" id="versionName" value="1.0">
-        </div>
-        <div class="field">
-          <label>Version code</label>
-          <input type="text" id="versionCode" value="1">
-        </div>
-      </div>
-    </div>
+    <p>Admin sign in</p>
+    <label>Email</label>
+    <input type="email" id="loginEmail" placeholder="you@example.com">
+    <label>Password</label>
+    <input type="password" id="loginPassword" placeholder="••••••••">
+    <button class="login-btn" id="loginBtn">Sign in</button>
+    <div class="error-msg" id="loginError"></div>
   </div>
-
-  <div class="section">
-    <div class="section-head"><span class="tag">02</span><h2>সোর্স ও কানেকশন</h2></div>
-    <div class="panel">
-      <div class="seg">
-        <div class="seg-opt active" id="srcCode">কোড পেস্ট</div>
-        <div class="seg-opt" id="srcUrl">ওয়েবসাইট URL</div>
-      </div>
-      <div class="field" id="codeField">
-        <textarea id="html_content" placeholder="&lt;!DOCTYPE html&gt;
-&lt;html&gt;...&lt;/html&gt;"></textarea>
-        <p class="note">CSS ও JS ইনলাইন সহ সম্পূর্ণ HTML — Online mode টগল কোড স্ক্যান করে স্বয়ংক্রিয় সেট হবে</p>
-      </div>
-      <div class="field" id="urlField" style="display:none;">
-        <input type="text" id="websiteUrl" placeholder="https://example.com">
-        <p class="note">অ্যাপ প্রতিবার এই লাইভ লিংক লোড করবে</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-head"><span class="tag">03</span><h2>আইকন</h2></div>
-    <div class="panel">
-      <div class="icon-picker">
-        <div class="icon-frame" id="iconFrame"><span class="ph">◇</span></div>
-        <label class="icon-choose" for="iconInput">
-          <b>ছবি বেছে নিন</b>
-          স্কয়ার, 512×512 PNG
-        </label>
-        <input type="file" id="iconInput" accept="image/*">
-      </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-head"><span class="tag">04</span><h2>আচরণ</h2></div>
-    <div class="panel toggle-list">
-      <div class="toggle">
-        <div>
-          <div class="label">Online mode<span class="auto-chip" id="onlineAutoChip">অটো</span></div>
-          <div class="sub" id="onlineModeSub">অফ থাকলে ইন্টারনেট সম্পূর্ণ বন্ধ (permission-ই থাকবে না)</div>
-        </div>
-        <label class="switch"><input type="checkbox" id="onlineMode"><span class="rail"></span></label>
-      </div>
-      <div class="toggle">
-        <div><div class="label">Fullscreen</div><div class="sub">স্ট্যাটাস বার লুকায়</div></div>
-        <label class="switch"><input type="checkbox" id="fullscreen"><span class="rail"></span></label>
-      </div>
-      <div class="toggle">
-        <div><div class="label">Exit confirmation</div><div class="sub">বের হওয়ার আগে জিজ্ঞাসা করে</div></div>
-        <label class="switch"><input type="checkbox" id="exitConfirmation" checked><span class="rail"></span></label>
-      </div>
-      <div class="toggle">
-        <div><div class="label">Dark mode</div><div class="sub">সিস্টেম থিম অনুসরণ করে</div></div>
-        <label class="switch"><input type="checkbox" id="darkMode"><span class="rail"></span></label>
-      </div>
-      <div class="toggle">
-        <div><div class="label">PC mode</div><div class="sub">ডেস্কটপ ভিউতে সাইট লোড হবে</div></div>
-        <label class="switch"><input type="checkbox" id="pcMode"><span class="rail"></span></label>
-      </div>
-    </div>
-  </div>
-
-  <button class="build-btn" id="buildBtn">Build APK</button>
-
-  <div id="statusPanel">
-    <div class="progress-track"><div class="progress-fill" id="progressBar"></div></div>
-    <div class="console" id="log"></div>
-  </div>
-
-  <div class="result" id="result">
-    <div class="manifest">
-      <div class="strip" id="manifestStrip">PACKAGE READY</div>
-      <div class="body">
-        <h3 id="resultTitle">তৈরি হয়ে গেছে</h3>
-        <p>সরাসরি APK ডাউনলোড লিংক — যেকোনো ব্রাউজারে কাজ করবে, লগইন লাগবে না</p>
-        <div class="link-row">
-          <input type="text" id="downloadLinkText" readonly>
-          <div class="copy-btn" id="copyBtn" title="কপি">⧉</div>
-        </div>
-        <a class="dl-btn" id="downloadLink" href="#" target="_blank" rel="noopener">Open Download</a>
-      </div>
-    </div>
-  </div>
-
-  <div class="section" id="historySection" style="display:none;">
-    <div class="section-head"><span class="tag">05</span><h2>হিস্ট্রি</h2></div>
-    <div class="panel" id="historyList"></div>
-  </div>
-
 </div>
 
-<script>
-const $ = id => document.getElementById(id);
+<!-- DASHBOARD -->
+<div id="dashboard" style="display:none;">
+  <div class="topbar">
+    <div class="brand">
+      <span class="brand-logo-wrap">
+        <img src="logo.png" alt="" class="brand-logo-img" onerror="window.__tryLogo(this, ['./logo.png','Logo.png','LOGO.png','logo.PNG','logo.jpg','logo.jpeg','logo.svg'])">
+        <span class="brand-logo-fallback">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#1A1200" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 4v10"/>
+            <path d="M8 10l4 4 4-4"/>
+            <path d="M6 18h12"/>
+          </svg>
+        </span>
+      </span>
+      <span class="bcod-part">Bcod</span><span class="store-part">Store</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌙</button>
+      <button class="logout-btn" id="logoutBtn">Sign out</button>
+    </div>
+  </div>
 
-// ---- source segmented control ----
-function detectOnline(html){
-  if(!html || !html.trim()) return false;
-  return /https?:\/\//i.test(html)
-      || /\bfetch\s*\(/i.test(html)
-      || /XMLHttpRequest/i.test(html)
-      || /\baxios[.(]/i.test(html)
-      || /\bWebSocket\s*\(/i.test(html);
-}
+  <div class="layout">
+    <!-- FORM PANEL -->
+    <div class="panel">
+      <h2 id="formTitle">Add new app</h2>
+      <p class="panel-sub">Fields marked with an asterisk are required.</p>
 
-function applyAutoOnlineState(){
-  const isOnline = detectOnline($('html_content').value);
-  $('onlineMode').checked = isOnline;
-}
+      <label>App name *</label>
+      <input type="text" id="fName" placeholder="e.g. My App">
 
-$('srcCode').onclick = ()=>{
-  $('srcCode').classList.add('active'); $('srcUrl').classList.remove('active');
-  $('codeField').style.display='block'; $('urlField').style.display='none';
-  $('onlineMode').disabled = false;
-  $('onlineAutoChip').style.display = 'inline';
-  $('onlineModeSub').textContent = 'অফ থাকলে ইন্টারনেট সম্পূর্ণ বন্ধ (permission-ই থাকবে না)';
-  applyAutoOnlineState();
-};
-$('srcUrl').onclick = ()=>{
-  $('srcUrl').classList.add('active'); $('srcCode').classList.remove('active');
-  $('urlField').style.display='block'; $('codeField').style.display='none';
-  $('onlineMode').checked = true;
-  $('onlineMode').disabled = true;
-  $('onlineAutoChip').style.display = 'none';
-  $('onlineModeSub').textContent = 'ওয়েবসাইট লিংক সবসময় ইন্টারনেট ব্যবহার করে';
-};
-$('html_content').addEventListener('input', applyAutoOnlineState);
-applyAutoOnlineState();
+      <label>Logo URL *</label>
+      <input type="text" id="fLogo" placeholder="https://...">
 
-// ---- persist connection settings ----
-['pat','owner','repo','workflowFile','branch'].forEach(id=>{
-  const saved = localStorage.getItem('apkb_'+id);
-  if(saved) $(id).value = saved;
-  $(id).addEventListener('change', ()=> localStorage.setItem('apkb_'+id, $(id).value));
-});
+      <label>Download URL (APK link) *</label>
+      <input type="text" id="fApk" placeholder="https://...">
 
-// ---- icon preview ----
-let logoBase64 = null;
-$('iconInput').addEventListener('change', e=>{
-  const file = e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ()=>{
-    logoBase64 = reader.result.split(',')[1];
-    $('iconFrame').innerHTML = `<img src="${reader.result}">`;
-  };
-  reader.readAsDataURL(file);
-});
+      <label>Download password (optional)</label>
+      <input type="text" id="fPassword" placeholder="Leave empty if not needed">
 
-// ---- logging ----
-function log(msg, cls=''){
-  const d = document.createElement('div');
-  d.className = 'row ' + cls;
-  d.textContent = '· ' + msg;
-  $('log').appendChild(d);
-  $('log').scrollTop = $('log').scrollHeight;
-}
-function setProgress(p){ $('progressBar').style.width = p+'%'; }
+      <label>Size (MB) *</label>
+      <input type="number" id="fSize" placeholder="e.g. 25">
 
-function ghHeaders(){
-  return {
-    'Authorization': 'Bearer ' + $('pat').value.trim(),
-    'Accept': 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28'
-  };
-}
-function b64EncodeUtf8(str){ return btoa(unescape(encodeURIComponent(str))); }
-function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+      <label>Description</label>
+      <textarea id="fDesc" rows="3" placeholder="What this app does"></textarea>
 
-async function putFile(owner, repo, path, contentBase64, message, branch){
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-  let sha = null;
-  try{
-    const r = await fetch(url + `?ref=${branch}`, { headers: ghHeaders() });
-    if(r.ok){ const j = await r.json(); sha = j.sha; }
-  }catch(e){}
-  const body = { message, content: contentBase64, branch };
-  if(sha) body.sha = sha;
-  const res = await fetch(url, { method:'PUT', headers: ghHeaders(), body: JSON.stringify(body) });
-  if(!res.ok){
-    const err = await res.text();
-    throw new Error('ফাইল লিখতে ব্যর্থ (' + path + '): ' + res.status + ' ' + err.slice(0,200));
-  }
-}
+      <label>Screenshot URLs (one per line)</label>
+      <textarea id="fShots" rows="3" placeholder="https://...&#10;https://..."></textarea>
 
-async function dispatchWorkflow(owner, repo, workflowFile, branch, inputs){
-  const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFile}/dispatches`;
-  const res = await fetch(url, { method:'POST', headers: ghHeaders(), body: JSON.stringify({ ref: branch, inputs }) });
-  if(!res.ok){
-    const err = await res.text();
-    throw new Error('workflow চালু করা যায়নি: ' + res.status + ' ' + err.slice(0,200));
-  }
-}
-
-async function findNewRun(owner, repo, workflowFile, afterTime){
-  for(let i=0;i<20;i++){
-    await sleep(3000);
-    const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFile}/runs?per_page=5`;
-    const res = await fetch(url, { headers: ghHeaders() });
-    if(res.ok){
-      const j = await res.json();
-      const run = (j.workflow_runs||[]).find(r => new Date(r.created_at).getTime() >= afterTime - 5000);
-      if(run) return run;
-    }
-  }
-  throw new Error('নতুন run খুঁজে পাওয়া যায়নি — Actions ট্যাবে ম্যানুয়ালি চেক করুন।');
-}
-
-async function pollRun(owner, repo, runId){
-  while(true){
-    await sleep(6000);
-    const url = `https://api.github.com/repos/${owner}/${repo}/actions/runs/${runId}`;
-    const res = await fetch(url, { headers: ghHeaders() });
-    const j = await res.json();
-    log(`স্ট্যাটাস: ${j.status}${j.conclusion ? ' → '+j.conclusion : ''}`);
-    if(j.status === 'completed') return j;
-  }
-}
-
-function copyToClipboard(text){
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    return navigator.clipboard.writeText(text);
-  }
-  const ta = document.createElement('textarea');
-  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-  document.body.appendChild(ta); ta.focus(); ta.select();
-  try{ document.execCommand('copy'); }catch(e){}
-  document.body.removeChild(ta);
-  return Promise.resolve();
-}
-
-const HISTORY_KEY = 'apkb_history';
-
-function loadHistory(){
-  try{ return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }catch(e){ return []; }
-}
-function saveHistoryArr(arr){ localStorage.setItem(HISTORY_KEY, JSON.stringify(arr)); }
-
-function addHistoryEntry(entry){
-  const arr = loadHistory();
-  arr.unshift(entry);
-  saveHistoryArr(arr.slice(0, 30));
-  renderHistory();
-}
-
-function removeHistoryEntry(id){
-  const arr = loadHistory().filter(e => e.id !== id);
-  saveHistoryArr(arr);
-  renderHistory();
-}
-
-function fmtDate(ts){
-  const d = new Date(ts);
-  return d.toLocaleDateString('bn-BD', {day:'numeric', month:'short'}) + ' · ' + d.toLocaleTimeString('bn-BD', {hour:'2-digit', minute:'2-digit'});
-}
-
-function renderHistory(){
-  const arr = loadHistory();
-  const box = $('historyList');
-  const section = $('historySection');
-  if(arr.length === 0){ section.style.display = 'none'; box.innerHTML = ''; return; }
-  section.style.display = 'block';
-  box.innerHTML = '';
-  arr.forEach(entry=>{
-    const row = document.createElement('div');
-    row.className = 'hist-item';
-    row.innerHTML = `
-      <div class="hist-icon">◇</div>
-      <div class="hist-info">
-        <div class="name">${entry.appName}</div>
-        <div class="meta">${fmtDate(entry.ts)} · ${entry.repo}</div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="fBanner">
+        <label for="fBanner">Show as banner on home page</label>
       </div>
-      <div class="hist-actions">
-        <div class="hist-btn" title="কপি লিংক">⧉</div>
-        <div class="hist-btn" title="খুলুন">⬇</div>
-        <div class="hist-btn danger" title="Remove">✕</div>
-      </div>`;
-    const [copyEl, openEl, rmBtn] = row.querySelectorAll('.hist-btn');
-    copyEl.onclick = ()=>{
-      copyToClipboard(entry.url);
-      copyEl.textContent = '✓';
-      setTimeout(()=> copyEl.textContent = '⧉', 1200);
-    };
-    openEl.onclick = ()=> window.open(entry.url, '_blank', 'noopener');
-    rmBtn.onclick = ()=> removeHistoryEntry(entry.id);
-    box.appendChild(row);
+
+      <label>Banner image URL (optional, defaults to logo)</label>
+      <input type="text" id="fBannerImg" placeholder="https://...">
+
+      <div class="form-actions">
+        <button class="btn-primary" id="saveBtn">Save app</button>
+        <button class="btn-secondary" id="cancelEditBtn" style="display:none;">Cancel</button>
+      </div>
+      <div class="form-msg" id="formMsg"></div>
+    </div>
+
+    <!-- LIST PANEL -->
+    <div class="panel">
+      <h2>All apps</h2>
+      <p class="panel-sub">Press and hold the ⠿ handle to drag an app into a new position.</p>
+      <div id="appList"></div>
+      <div class="empty-list" id="emptyList" hidden>No apps added yet.</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, collection, query, orderBy, onSnapshot,
+  addDoc, doc, updateDoc, deleteDoc, serverTimestamp, writeBatch
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB-6sCgwBLlR8Rou_-3egpCJwuhy1hwijo",
+  authDomain: "bcodstore-e6204.firebaseapp.com",
+  projectId: "bcodstore-e6204",
+  storageBucket: "bcodstore-e6204.firebasestorage.app",
+  messagingSenderId: "1054943264169",
+  appId: "1:1054943264169:web:c02fea3197fb841b9898b8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+let allApps = [];
+let editingId = null;
+
+// ---------- Theme ----------
+const themeToggle = document.getElementById('themeToggle');
+function currentTheme(){ return document.documentElement.getAttribute('data-theme') || 'light'; }
+function setTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('bcodstore_theme', theme);
+  themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+setTheme(currentTheme());
+themeToggle.addEventListener('click', () => setTheme(currentTheme() === 'light' ? 'dark' : 'light'));
+
+// ---------- Auth ----------
+const loginScreen = document.getElementById('loginScreen');
+const dashboard = document.getElementById('dashboard');
+
+onAuthStateChanged(auth, (user) => {
+  if (user){
+    loginScreen.style.display = 'none';
+    dashboard.style.display = 'block';
+    startListening();
+  } else {
+    loginScreen.style.display = 'flex';
+    dashboard.style.display = 'none';
+  }
+});
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (e){
+    errEl.textContent = 'Incorrect email or password.';
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
+
+// ---------- Firestore listener ----------
+let unsub = null;
+function startListening(){
+  if (unsub) return;
+  const q = query(collection(db, 'apps'), orderBy('order', 'asc'));
+  unsub = onSnapshot(q, (snap) => {
+    if (dragState.active) return; // don't let remote updates fight an in-progress drag
+    allApps = [];
+    snap.forEach(d => allApps.push({ id: d.id, ...d.data() }));
+    renderList();
   });
 }
-renderHistory();
 
-$('copyBtn').addEventListener('click', ()=>{
-  copyToClipboard($('downloadLinkText').value);
-  $('copyBtn').classList.add('copied');
-  $('copyBtn').textContent = '✓';
-  setTimeout(()=>{ $('copyBtn').classList.remove('copied'); $('copyBtn').textContent = '⧉'; }, 1200);
-});
+function renderList(){
+  const listEl = document.getElementById('appList');
+  const emptyEl = document.getElementById('emptyList');
+  listEl.innerHTML = '';
+  emptyEl.hidden = allApps.length !== 0;
 
-$('buildBtn').addEventListener('click', async ()=>{
-  const owner = $('owner').value.trim();
-  const repo = $('repo').value.trim();
-  const workflowFile = $('workflowFile').value.trim();
-  const branch = $('branch').value.trim() || 'main';
-  const appName = $('appName').value.trim();
-  const appId = $('appId').value.trim();
-  const usingUrl = $('srcUrl').classList.contains('active');
-  const html = $('html_content').value;
-  const websiteUrl = $('websiteUrl').value.trim();
+  allApps.forEach((a) => {
+    const row = document.createElement('div');
+    row.className = 'app-row';
+    row.dataset.id = a.id;
+    row.innerHTML = `
+      <div class="drag-handle">⠿</div>
+      <img src="${escapeAttr(a.logoUrl || '')}" alt="">
+      <div class="info">
+        <div class="name">${escapeHtml(a.name || 'Untitled')}${a.isBanner ? '<span class="banner-tag">BANNER</span>' : ''}</div>
+        <div class="meta">${a.sizeMB ? a.sizeMB + ' MB' : ''}</div>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" data-act="edit">✎</button>
+        <button class="icon-btn danger" data-act="delete">✕</button>
+      </div>
+    `;
+    row.querySelector('[data-act="edit"]').addEventListener('click', () => loadForEdit(a));
+    row.querySelector('[data-act="delete"]').addEventListener('click', () => deleteApp(a));
+    row.querySelector('.drag-handle').addEventListener('pointerdown', (e) => onDragStart(e, a.id));
+    listEl.appendChild(row);
+  });
+}
 
-  if(!$('pat').value.trim() || !owner || !repo || !appName || !appId){
-    alert('GitHub সংযোগ (টোকেন, owner, repo) ও App name / Package name অবশ্যই পূরণ করুন।');
+// ---------- Drag to reorder ----------
+const dragState = { active: false, id: null, startY: 0 };
+
+function onDragStart(e, id){
+  e.preventDefault();
+  dragState.active = true;
+  dragState.id = id;
+  dragState.startY = e.clientY;
+  const row = document.querySelector(`.app-row[data-id="${cssEscape(id)}"]`);
+  if (row) row.classList.add('dragging');
+  document.body.style.userSelect = 'none';
+  window.addEventListener('pointermove', onDragMove);
+  window.addEventListener('pointerup', onDragEnd);
+}
+
+function onDragMove(e){
+  if (!dragState.active) return;
+  const row = document.querySelector(`.app-row[data-id="${cssEscape(dragState.id)}"]`);
+  if (!row) return;
+  const deltaY = e.clientY - dragState.startY;
+  row.style.transform = `translateY(${deltaY}px)`;
+
+  const rowHeight = row.offsetHeight;
+  const currentIndex = allApps.findIndex(a => a.id === dragState.id);
+  let newIndex = currentIndex + Math.round(deltaY / rowHeight);
+  newIndex = Math.max(0, Math.min(allApps.length - 1, newIndex));
+
+  if (newIndex !== currentIndex){
+    const [moved] = allApps.splice(currentIndex, 1);
+    allApps.splice(newIndex, 0, moved);
+    dragState.startY = e.clientY;
+    renderList();
+    const newRow = document.querySelector(`.app-row[data-id="${cssEscape(dragState.id)}"]`);
+    if (newRow) newRow.classList.add('dragging');
+  }
+}
+
+async function onDragEnd(){
+  if (!dragState.active) return;
+  const row = document.querySelector(`.app-row[data-id="${cssEscape(dragState.id)}"]`);
+  if (row){ row.classList.remove('dragging'); row.style.transform = ''; }
+  document.body.style.userSelect = '';
+  window.removeEventListener('pointermove', onDragMove);
+  window.removeEventListener('pointerup', onDragEnd);
+
+  dragState.active = false;
+  dragState.id = null;
+
+  const batch = writeBatch(db);
+  let changed = false;
+  allApps.forEach((a, idx) => {
+    if (a.order !== idx){
+      batch.update(doc(db, 'apps', a.id), { order: idx });
+      a.order = idx;
+      changed = true;
+    }
+  });
+  if (changed){
+    try { await batch.commit(); } catch (e){ console.error('Reorder failed:', e); }
+  }
+}
+
+function cssEscape(str){
+  return String(str).replace(/["\\]/g, '\\$&');
+}
+
+async function deleteApp(a){
+  if (!confirm(`Delete "${a.name}"? This cannot be undone.`)) return;
+  await deleteDoc(doc(db, 'apps', a.id));
+  if (editingId === a.id) resetForm();
+}
+
+function loadForEdit(a){
+  editingId = a.id;
+  document.getElementById('formTitle').textContent = 'Edit app';
+  document.getElementById('fName').value = a.name || '';
+  document.getElementById('fLogo').value = a.logoUrl || '';
+  document.getElementById('fApk').value = a.apkUrl || '';
+  document.getElementById('fPassword').value = a.downloadPassword || '';
+  document.getElementById('fSize').value = a.sizeMB || '';
+  document.getElementById('fDesc').value = a.description || '';
+  document.getElementById('fShots').value = (a.screenshots || []).join('\n');
+  document.getElementById('fBanner').checked = !!a.isBanner;
+  document.getElementById('fBannerImg').value = a.bannerImageUrl || '';
+  document.getElementById('saveBtn').textContent = 'Update app';
+  document.getElementById('cancelEditBtn').style.display = 'inline-block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetForm(){
+  editingId = null;
+  document.getElementById('formTitle').textContent = 'Add new app';
+  document.getElementById('fName').value = '';
+  document.getElementById('fLogo').value = '';
+  document.getElementById('fApk').value = '';
+  document.getElementById('fPassword').value = '';
+  document.getElementById('fSize').value = '';
+  document.getElementById('fDesc').value = '';
+  document.getElementById('fShots').value = '';
+  document.getElementById('fBanner').checked = false;
+  document.getElementById('fBannerImg').value = '';
+  document.getElementById('saveBtn').textContent = 'Save app';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+  document.getElementById('formMsg').textContent = '';
+}
+
+document.getElementById('cancelEditBtn').addEventListener('click', resetForm);
+
+document.getElementById('saveBtn').addEventListener('click', async () => {
+  const msgEl = document.getElementById('formMsg');
+  const name = document.getElementById('fName').value.trim();
+  const logoUrl = document.getElementById('fLogo').value.trim();
+  const apkUrl = document.getElementById('fApk').value.trim();
+  const downloadPassword = document.getElementById('fPassword').value.trim();
+  const sizeMB = parseFloat(document.getElementById('fSize').value);
+  const description = document.getElementById('fDesc').value.trim();
+  const screenshots = document.getElementById('fShots').value
+    .split('\n').map(s => s.trim()).filter(Boolean);
+  const isBanner = document.getElementById('fBanner').checked;
+  const bannerImageUrl = document.getElementById('fBannerImg').value.trim();
+
+  if (!name || !logoUrl || !apkUrl || isNaN(sizeMB)){
+    msgEl.textContent = 'Please fill in all required fields.';
+    msgEl.className = 'form-msg err';
     return;
   }
-  if(usingUrl && !websiteUrl){ alert('Website URL দিন।'); return; }
-  if(!usingUrl && !html.trim()){ alert('HTML কোড পেস্ট করুন।'); return; }
 
-  $('buildBtn').disabled = true;
-  $('buildBtn').classList.add('building');
-  $('buildBtn').innerHTML = '<span class="spinner-ring"></span><span>প্যাকেজিং হচ্ছে…</span>';
-  $('statusPanel').classList.add('show');
-  $('result').classList.remove('show');
-  $('log').innerHTML = '';
-  setProgress(5);
+  const data = { name, logoUrl, apkUrl, downloadPassword, sizeMB, description, screenshots, isBanner, bannerImageUrl };
 
-  try{
-    if(!usingUrl){
-      log('www/index.html লেখা হচ্ছে...');
-      await putFile(owner, repo, 'www/index.html', b64EncodeUtf8(html), 'Update via Build APK app', branch);
-      log('index.html সেভ', 'ok');
+  try {
+    if (editingId){
+      await updateDoc(doc(db, 'apps', editingId), data);
+      msgEl.textContent = 'App updated.';
     } else {
-      log('URL মোডের জন্য প্লেসহোল্ডার রাখা হচ্ছে...');
-      await putFile(owner, repo, 'www/index.html', b64EncodeUtf8('<html><body>Loading...</body></html>'), 'Placeholder for URL mode', branch);
+      const maxOrder = allApps.reduce((m, a) => Math.max(m, a.order || 0), 0);
+      await addDoc(collection(db, 'apps'), { ...data, order: maxOrder + 1, createdAt: serverTimestamp() });
+      msgEl.textContent = 'App added.';
     }
-    setProgress(15);
-
-    if(logoBase64){
-      log('আইকন আপলোড হচ্ছে...');
-      await putFile(owner, repo, 'resources/icon.png', logoBase64, 'Add icon via Build APK app', branch);
-      log('আইকন সেভ', 'ok');
-    }
-    setProgress(25);
-
-    const releaseTag = 'build-' + Date.now();
-    const assetName = appName.replace(/\s+/g,'_') + '.apk';
-
-    const inputs = {
-      app_name: appName,
-      app_id: appId,
-      version_name: $('versionName').value.trim() || '1.0',
-      version_code: $('versionCode').value.trim() || '1',
-      source_type: usingUrl ? 'url' : 'html',
-      website_url: usingUrl ? websiteUrl : '',
-      online_mode: String($('onlineMode').checked),
-      fullscreen: String($('fullscreen').checked),
-      exit_confirmation: String($('exitConfirmation').checked),
-      dark_mode: String($('darkMode').checked),
-      pc_mode: String($('pcMode').checked),
-      release_tag: releaseTag
-    };
-
-    log('বিল্ড চালু করা হচ্ছে...');
-    const dispatchTime = Date.now();
-    await dispatchWorkflow(owner, repo, workflowFile, branch, inputs);
-    setProgress(35);
-
-    log('run খোঁজা হচ্ছে...');
-    const run = await findNewRun(owner, repo, workflowFile, dispatchTime);
-    log(`run #${run.run_number} শুরু হয়েছে`, 'ok');
-    setProgress(45);
-
-    log('প্যাকেজিং চলছে...', 'now');
-    const finished = await pollRun(owner, repo, run.id);
-    setProgress(85);
-
-    if(finished.conclusion !== 'success'){
-      throw new Error('বিল্ড ব্যর্থ। Actions ট্যাবে লগ দেখুন।');
-    }
-    log('বিল্ড সফল', 'ok');
-
-    log('ডাউনলোড লিংক তৈরি হচ্ছে...');
-    const artifactUrl = `https://github.com/${owner}/${repo}/releases/download/${releaseTag}/${assetName}`;
-    setProgress(100);
-
-    $('downloadLink').href = artifactUrl;
-    $('downloadLinkText').value = artifactUrl;
-    $('resultTitle').textContent = appName;
-    $('result').classList.add('show');
-    log('সম্পন্ন', 'ok');
-
-    addHistoryEntry({
-      id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
-      appName, owner, repo, runId: run.id, url: artifactUrl, ts: Date.now()
-    });
-
-  }catch(err){
-    log('এরর: ' + err.message, 'err');
-  }finally{
-    $('buildBtn').disabled = false;
-    $('buildBtn').classList.remove('building');
-    $('buildBtn').textContent = 'Build APK';
+    msgEl.className = 'form-msg ok';
+    resetForm();
+  } catch (e){
+    console.error(e);
+    msgEl.textContent = 'Something went wrong. Please try again.';
+    msgEl.className = 'form-msg err';
   }
 });
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function escapeAttr(str){ return escapeHtml(str); }
 </script>
 </body>
 </html>
